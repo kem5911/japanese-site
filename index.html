@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>일본어 학습</title>
+<style>
+  :root { --bg:#f6f5f1; --card:#fff; --text:#222; --muted:#777; --accent:#c8374a; --line:#e3e0d8; --done:#e8f3ea; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#1b1b1d; --card:#26262a; --text:#eee; --muted:#999; --accent:#ff6b7f; --line:#3a3a3f; --done:#22352a; } }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,"Noto Sans KR","Noto Sans JP",sans-serif; background:var(--bg); color:var(--text); }
+  header { padding:20px 16px 0; max-width:820px; margin:auto; }
+  h1 { margin:0 0 12px; font-size:1.5rem; }
+  nav { display:flex; gap:8px; border-bottom:1px solid var(--line); }
+  nav button { border:0; background:none; padding:10px 14px; font-size:1rem; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; }
+  nav button[aria-selected="true"] { color:var(--accent); border-color:var(--accent); font-weight:600; }
+  main { max-width:820px; margin:auto; padding:16px; }
+  section[hidden] { display:none; }
+  .bar { display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; color:var(--muted); }
+  .word { display:flex; gap:12px; align-items:flex-start; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:8px; }
+  .word.done { background:var(--done); }
+  .word input { width:20px; height:20px; margin-top:4px; flex:none; }
+  .jp { font-size:1.3rem; font-weight:600; }
+  .yomi { color:var(--muted); margin-left:6px; }
+  .ex { color:var(--muted); margin-top:4px; }
+  .flash { min-height:260px; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:24px; cursor:pointer; user-select:none; width:100%; font:inherit; color:inherit; }
+  .flash .jp { font-size:2.6rem; }
+  .flash .back { margin-top:16px; font-size:1.1rem; line-height:1.7; }
+  .controls { display:flex; justify-content:center; gap:8px; margin-top:12px; flex-wrap:wrap; }
+  .controls button, .bar button { padding:8px 16px; border:1px solid var(--line); background:var(--card); color:var(--text); border-radius:8px; cursor:pointer; font-size:1rem; }
+  h2 { font-size:1.15rem; margin:24px 0 8px; }
+  .phrase { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:6px; }
+  .phrase .ko { color:var(--muted); font-size:.95rem; }
+  .say { border:0; background:none; cursor:pointer; font-size:1rem; padding:2px 4px; vertical-align:middle; }
+  .rate { display:flex; align-items:center; gap:8px; margin:0 0 10px; color:var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>🇯🇵 일본어 학습 (JLPT N3~N2)</h1>
+  <label class="rate">🔊 읽기 속도 <input type="range" id="rate" min="0.5" max="1.5" step="0.1" value="1"> <span id="rateVal">1.0x</span></label>
+  <nav role="tablist">
+    <button role="tab" aria-selected="true" data-tab="list">단어장</button>
+    <button role="tab" aria-selected="false" data-tab="flash">플래시카드</button>
+    <button role="tab" aria-selected="false" data-tab="talk">실생활 회화</button>
+  </nav>
+</header>
+<main>
+  <section id="list">
+    <div class="bar"><span id="count"></span><label><input type="checkbox" id="hideDone"> 외운 단어 숨기기</label></div>
+    <div id="words"></div>
+  </section>
+
+  <section id="flash" hidden>
+    <div class="bar"><span id="pos"></span><label><input type="checkbox" id="skipDone"> 외운 단어 제외</label></div>
+    <div class="flash" id="card" role="button" tabindex="0" aria-live="polite"></div>
+    <div class="controls">
+      <button id="prev">◀ 이전</button>
+      <button id="mark"></button>
+      <button id="next">다음 ▶</button>
+      <button id="shuffle">🔀 섞기</button>
+    </div>
+  </section>
+
+  <section id="talk" hidden></section>
+</main>
+
+<script>
+const W = [
+  ["経験","けいけん","경험","海外で働いた経験があります。"],
+  ["準備","じゅんび","준비","旅行の準備はもうできましたか。"],
+  ["説明","せつめい","설명","先生がもう一度説明してくれた。"],
+  ["必要","ひつよう","필요","入国にはパスポートが必要です。"],
+  ["約束","やくそく","약속","友達と会う約束をした。"],
+  ["予定","よてい","예정","週末の予定はありますか。"],
+  ["機会","きかい","기회","日本語を話す機会が少ない。"],
+  ["状況","じょうきょう","상황","今の状況を教えてください。"],
+  ["影響","えいきょう","영향","台風の影響で電車が止まった。"],
+  ["解決","かいけつ","해결","問題はすぐに解決した。"],
+  ["努力","どりょく","노력","努力すれば必ず上手になる。"],
+  ["期待","きたい","기대","新しい仕事に期待している。"],
+  ["関係","かんけい","관계","二人はどんな関係ですか。"],
+  ["環境","かんきょう","환경","静かな環境で勉強したい。"],
+  ["将来","しょうらい","장래, 미래","将来、日本で働きたい。"],
+  ["目的","もくてき","목적","旅行の目的は何ですか。"],
+  ["結果","けっか","결과","試験の結果が出た。"],
+  ["原因","げんいん","원인","警察が事故の原因を調べている。"],
+  ["意見","いけん","의견","あなたの意見を聞かせてください。"],
+  ["手続き","てつづき","수속, 절차","市役所で引っ越しの手続きをした。"],
+  ["申し込む","もうしこむ","신청하다","日本語能力試験に申し込んだ。"],
+  ["断る","ことわる","거절하다","誘いを丁寧に断った。"],
+  ["届ける","とどける","가져다주다, 신고하다","落とし物を交番に届けた。"],
+  ["比べる","くらべる","비교하다","去年と比べて今年は暖かい。"],
+  ["続ける","つづける","계속하다","毎日日記を書き続けている。"],
+  ["増える","ふえる","늘다, 증가하다","外国人観光客が増えた。"],
+  ["減る","へる","줄다, 감소하다","最近、体重が減った。"],
+  ["迷う","まよう","헤매다, 망설이다","駅で道に迷ってしまった。"],
+  ["慣れる","なれる","익숙해지다","日本の生活にもう慣れました。"],
+  ["預ける","あずける","맡기다","荷物をホテルに預けた。"],
+  ["間に合う","まにあう","시간에 맞추다","急げば電車に間に合う。"],
+  ["片付ける","かたづける","정리하다, 치우다","部屋を片付けなさい。"],
+  ["支払う","しはらう","지불하다","カードで支払えますか。"],
+  ["確認する","かくにんする","확인하다","予約をもう一度確認してください。"],
+  ["我慢する","がまんする","참다","痛みを我慢した。"],
+  ["遠慮する","えんりょする","사양하다","遠慮しないで食べてください。"],
+  ["譲る","ゆずる","양보하다","お年寄りに席を譲った。"],
+  ["戻る","もどる","돌아오다, 되돌아가다","すぐに戻ります。"],
+  ["伝える","つたえる","전하다","田中さんによろしく伝えてください。"],
+  ["集める","あつめる","모으다","切手を集めるのが趣味です。"],
+  ["詳しい","くわしい","자세하다, 잘 알다","もっと詳しく教えてください。"],
+  ["珍しい","めずらしい","드물다, 희귀하다","この町で雪が降るのは珍しい。"],
+  ["厳しい","きびしい","엄하다, 혹독하다","父はとても厳しい人だ。"],
+  ["懐かしい","なつかしい","그립다","この歌を聞くと懐かしくなる。"],
+  ["恥ずかしい","はずかしい","부끄럽다","人前で話すのは恥ずかしい。"],
+  ["素直","すなお","솔직함, 순순함","彼は素直な性格だ。"],
+  ["正直","しょうじき","정직, 솔직히","正直に話してください。"],
+  ["大切","たいせつ","소중함","家族が一番大切だ。"],
+  ["突然","とつぜん","갑자기","突然雨が降り出した。"],
+  ["相変わらず","あいかわらず","여전히, 변함없이","彼は相変わらず元気だ。"],
+];
+
+const T = {
+  "🏪 편의점": [
+    ["温めますか。","데워 드릴까요?"],
+    ["はい、お願いします。","네, 부탁합니다."],
+    ["袋はご利用ですか。","봉투 필요하세요?"],
+    ["袋は大丈夫です。","봉투는 괜찮아요(필요 없어요)."],
+    ["お箸はおつけしますか。","젓가락 넣어 드릴까요?"],
+    ["ポイントカードはお持ちですか。","포인트 카드 있으세요?"],
+    ["カードで払えますか。","카드로 결제되나요?"],
+    ["レシートは要りません。","영수증은 필요 없어요."],
+    ["年齢確認ボタンを押してください。","연령 확인 버튼을 눌러 주세요."],
+    ["電池はどこにありますか。","건전지는 어디에 있나요?"],
+  ],
+  "🍜 식당": [
+    ["何名様ですか。","몇 분이세요?"],
+    ["二人です。","두 명이에요."],
+    ["禁煙席をお願いします。","금연석으로 부탁해요."],
+    ["すみません、注文お願いします。","저기요, 주문할게요."],
+    ["おすすめは何ですか。","추천 메뉴는 뭐예요?"],
+    ["これを一つください。","이거 하나 주세요."],
+    ["少々お待ちください。","잠시만 기다려 주세요."],
+    ["お水をもらえますか。","물 좀 주시겠어요?"],
+    ["お会計お願いします。","계산해 주세요."],
+    ["ごちそうさまでした。","잘 먹었습니다."],
+  ],
+  "🚉 역": [
+    ["切符はどこで買えますか。","표는 어디서 살 수 있나요?"],
+    ["新宿までいくらですか。","신주쿠까지 얼마예요?"],
+    ["この電車は渋谷に止まりますか。","이 전철은 시부야에 서나요?"],
+    ["何番線ですか。","몇 번 승강장이에요?"],
+    ["どこで乗り換えればいいですか。","어디서 갈아타면 되나요?"],
+    ["次の電車は何時ですか。","다음 전철은 몇 시예요?"],
+    ["終電は何時ですか。","막차는 몇 시예요?"],
+    ["東口はどちらですか。","동쪽 출구는 어느 쪽이에요?"],
+    ["ICカードにチャージしたいです。","교통카드를 충전하고 싶어요."],
+    ["電車が遅れています。","전철이 지연되고 있습니다."],
+  ],
+  "💼 아르바이트 면접": [
+    ["本日はよろしくお願いいたします。","오늘 잘 부탁드립니다."],
+    ["キムと申します。","김이라고 합니다."],
+    ["韓国から来ました。","한국에서 왔습니다."],
+    ["週に3日働けます。","일주일에 3일 일할 수 있습니다."],
+    ["土日も大丈夫です。","주말도 괜찮습니다."],
+    ["接客の経験があります。","접객 경험이 있습니다."],
+    ["日常会話ならできます。","일상 회화라면 가능합니다."],
+    ["来週から働けます。","다음 주부터 일할 수 있습니다."],
+    ["一生懸命頑張ります。","열심히 하겠습니다."],
+    ["ありがとうございました。失礼いたします。","감사합니다. 실례하겠습니다."],
+  ],
+};
+console.assert(W.length === 50 && Object.values(T).every(t => t.length === 10), "데이터 개수 오류");
+
+// 외운 단어: 단어 문자열 목록을 브라우저에 저장
+const KEY = "jp-done";
+let done;
+try { done = new Set(JSON.parse(localStorage.getItem(KEY)) || []); } catch { done = new Set(); }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify([...done])); } catch {} };
+const toggle = w => { done.has(w) ? done.delete(w) : done.add(w); save(); renderList(); renderCard(); };
+const $ = id => document.getElementById(id);
+
+// 음성 읽기 (Web Speech API)
+const say = t => `<button class="say" data-say="${t}" aria-label="읽기: ${t}">🔊</button>`;
+$("rate").oninput = () => $("rateVal").textContent = (+$("rate").value).toFixed(1) + "x";
+function speak(text) {
+  if (!("speechSynthesis" in window)) return alert("이 브라우저는 음성 읽기를 지원하지 않아요.");
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "ja-JP";
+  u.voice = speechSynthesis.getVoices().find(v => v.lang.replace("_", "-") === "ja-JP") || null;
+  u.rate = +$("rate").value;
+  speechSynthesis.speak(u);
+}
+// 캡처 단계에서 처리해 카드 뒤집기/체크박스 토글이 같이 일어나지 않게 함
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-say]");
+  if (b) { e.preventDefault(); e.stopPropagation(); speak(b.dataset.say); }
+}, true);
+
+// 탭
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("nav button").forEach(x => x.setAttribute("aria-selected", x === b));
+  document.querySelectorAll("main section").forEach(s => s.hidden = s.id !== b.dataset.tab);
+});
+
+// 단어장
+function renderList() {
+  $("count").textContent = `외운 단어 ${done.size} / ${W.length}`;
+  $("words").innerHTML = "";
+  W.filter(w => !($("hideDone").checked && done.has(w[0]))).forEach(([jp, yomi, ko, ex]) => {
+    const el = document.createElement("label");
+    el.className = "word" + (done.has(jp) ? " done" : "");
+    el.innerHTML = `<input type="checkbox" ${done.has(jp) ? "checked" : ""}>
+      <div><span class="jp">${jp}</span>${say(jp)}<span class="yomi">${yomi}</span> — ${ko}<div class="ex">${ex}${say(ex)}</div></div>`;
+    el.querySelector("input").onchange = () => toggle(jp);
+    $("words").append(el);
+  });
+}
+$("hideDone").onchange = renderList;
+
+// 플래시카드
+let order = W.map((_, i) => i), i = 0, flipped = false;
+const deck = () => order.filter(n => !($("skipDone").checked && done.has(W[n][0])));
+function renderCard() {
+  const d = deck();
+  if (!d.length) { $("card").innerHTML = "🎉 모든 단어를 외웠어요!"; $("pos").textContent = "0 / 0"; $("mark").hidden = true; return; }
+  i = (i + d.length) % d.length;
+  const [jp, yomi, ko, ex] = W[d[i]];
+  $("pos").textContent = `${i + 1} / ${d.length}`;
+  $("card").innerHTML = `<div class="jp">${jp}${say(jp)}</div>` + (flipped
+    ? `<div class="back"><b>${yomi}</b><br>${ko}<br><span class="ex">${ex}</span>${say(ex)}</div>`
+    : `<div class="ex" style="margin-top:16px">눌러서 뜻 보기</div>`);
+  $("mark").hidden = false;
+  $("mark").textContent = done.has(jp) ? "✅ 외움 (취소)" : "☐ 외웠어요";
+}
+const go = step => { i += step; flipped = false; renderCard(); };
+$("card").onclick = () => { flipped = !flipped; renderCard(); };
+$("card").onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("card").click(); } };
+$("prev").onclick = () => go(-1);
+$("next").onclick = () => go(1);
+$("mark").onclick = () => { const d = deck(); toggle(W[d[i]][0]); };
+$("shuffle").onclick = () => { order.sort(() => Math.random() - 0.5); i = 0; flipped = false; renderCard(); };
+$("skipDone").onchange = () => { i = 0; flipped = false; renderCard(); };
+
+// 회화
+$("talk").innerHTML = Object.entries(T).map(([title, list]) =>
+  `<h2>${title}</h2>` + list.map(([jp, ko]) => `<div class="phrase"><div>${jp}${say(jp)}</div><div class="ko">${ko}</div></div>`).join("")
+).join("");
+
+renderList();
+renderCard();
+</script>
+</body>
+</html>
