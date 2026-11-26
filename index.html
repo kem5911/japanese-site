@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>한일냠냠 · 日韓もぐもぐ</title>
-<meta name="theme-color" content="#ffd23f">
+<title>한일 전철 · 日韓でんしゃ</title>
+<meta name="theme-color" content="#14213d">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;800;900&family=Noto+Sans+JP:wght@400;700;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=DotGothic16&family=Noto+Sans+KR:wght@400;700;800;900&family=Noto+Sans+JP:wght@400;700;900&display=swap">
 <style>
   :root { --bg:#f6f5f1; --card:#fff; --text:#222; --muted:#777; --accent:#c8374a; --line:#e3e0d8; --done:#e8f3ea; }
   @media (prefers-color-scheme: dark) { :root { --bg:#1b1b1d; --card:#26262a; --text:#eee; --muted:#999; --accent:#ff6b7f; --line:#3a3a3f; --done:#22352a; } }
@@ -114,94 +114,194 @@
   #toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(160px); background:var(--text); color:var(--bg); padding:12px 18px; border-radius:12px; font-weight:600; transition:transform .3s; z-index:9; max-width:90vw; text-align:center; }
   #toast.show { transform:translateX(-50%) translateY(0); }
 
-  /* ── 도시락 디자인: 밝은 바탕, 굵은 테두리, 살짝 밀린 그림자, 메뉴마다 다른 색 ── */
-  :root { --bg:#fff7dc; --card:#ffffff; --text:#2a2116; --muted:#6b5d49; --accent:#ff6b4a; --line:#2a2116; --done:#d4f3e5;
-    --yolk:#ffd23f; --mint:#a8e6cf; --peach:#ffb3a7; --sky:#bcd7ff; --lilac:#d9c2ff; --butter:#ffe08a; --onyolk:#2a2116;
-    --bd:2.5px; --sh:3px 3px 0 var(--line); --fs:1.0625rem; }
-  @media (prefers-color-scheme: dark) { :root { --bg:#1d1a14; --card:#2a261e; --text:#f6efe2; --muted:#c3b8a4; --accent:#ff8a6e; --line:#f6efe2; --done:#24443a;
-    --yolk:#e3b62a; --mint:#2f6b55; --peach:#7a4038; --sky:#2f4a75; --lilac:#4f3b78; --butter:#6e5a1f; --onyolk:#1d1a14; } }
+  /* ── 일본 전철 디자인: 역 이름판(駅名標), 차내 안내 화면(LCD), 발차 안내판(発車標), 점자 블록, IC카드, 역 스탬프 ── */
+  :root { --bg:#e7e9ec; --card:#ffffff; --text:#1a1f2b; --muted:#5a6170; --line:#cdd2d9; --done:#e4f4e8;
+    --navy:#14213d; --lcd:#0f1a33; --next:#ff9a1f; --led:#ff8c1a; --ledg:#4be08a; --tenji:#f2c200; --ink:#c8102e;
+    --L-home:#14213d; --L-list:#2fa84f; --L-flash:#e5532d; --L-talk:#1e78d2; --L-listen:#9b5bd1; --L-rec:#ef8a00; --L-game:#00a3a8;
+    --lc:var(--L-list); --accent:var(--L-flash); --fs:1.0625rem;
+    --jpf:"Zen Kaku Gothic New","Noto Sans JP","Noto Sans KR",sans-serif; --dot:"DotGothic16","Noto Sans KR",monospace; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0e1116; --card:#1a1f27; --text:#eef1f6; --muted:#a3abba; --line:#2f3642; --done:#16301f;
+    --navy:#0b1428; --lcd:#08101f; --L-home:#8fa8ff; } }
   html { font-size:var(--fs); }
-  body { font-family:"Noto Sans KR","Noto Sans JP",system-ui,sans-serif; line-height:1.55; padding-bottom:calc(84px + env(safe-area-inset-bottom,0px)); }
-  h1, h2, .jua { font-family:"Jua","Noto Sans KR",sans-serif; font-weight:400; }
+  body { font-family:"Zen Kaku Gothic New","Noto Sans KR","Noto Sans JP",system-ui,sans-serif; line-height:1.55; padding-bottom:calc(86px + env(safe-area-inset-bottom,0px)); }
   button, select, input { font:inherit; color:inherit; }
-  :focus-visible { outline:3px solid var(--accent); outline-offset:2px; }
-  header { padding:14px max(16px,env(safe-area-inset-left,0px)) 0; }
-  .top { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
-  h1 { font-size:1.7rem; margin:0; letter-spacing:-.01em; }
-  h1 em { font-style:normal; color:var(--accent); }
-  .tools { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-  .sizer { display:flex; border:var(--bd) solid var(--line); border-radius:999px; background:var(--card); padding:2px; }
-  .sizer button { border:0; background:none; min-width:40px; min-height:38px; border-radius:999px; cursor:pointer; font-weight:800; }
-  .sizer button[aria-pressed="true"] { background:var(--yolk); color:var(--onyolk); }
-  .rate { margin:10px 0 0; font-size:.9rem; }
-  .rate input { accent-color:var(--accent); }
-  main { padding:16px max(16px,env(safe-area-inset-left,0px)) 24px; }
-  h2 { font-size:1.3rem; margin:22px 0 10px; }
+  :focus-visible { outline:3px solid var(--next); outline-offset:2px; }
+  #home { --lc:var(--L-home); } #list { --lc:var(--L-list); } #flash { --lc:var(--L-flash); } #talk { --lc:var(--L-talk); }
+  #listen { --lc:var(--L-listen); } #rec { --lc:var(--L-rec); } #game { --lc:var(--L-game); }
 
-  /* 아래 고정 메뉴 */
-  nav { position:fixed; left:0; right:0; bottom:0; z-index:20; background:var(--card); border-top:var(--bd) solid var(--line); border-bottom:0;
-    display:grid; grid-template-columns:repeat(7,1fr); gap:2px; overflow:visible;
-    padding:6px max(6px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(6px,env(safe-area-inset-left,0px)); }
-  nav button { display:flex; flex-direction:column; align-items:center; gap:1px; padding:6px 0; min-height:58px; font-size:.72rem; border:0; border-radius:14px; color:var(--text); white-space:nowrap; }
-  nav button .i { font-size:1.35rem; line-height:1.1; }
-  nav button[aria-selected="true"] { background:var(--yolk); color:var(--onyolk); font-weight:700; border:0; }
-  @media (min-width:700px) { nav { max-width:720px; margin:auto; bottom:12px; border:var(--bd) solid var(--line); border-radius:22px; box-shadow:var(--sh); } }
+  /* 점자 블록 띠 */
+  .tenji { height:12px; background-color:var(--tenji);
+    background-image:radial-gradient(circle at 6px 6px, #0000003a 2.2px, transparent 2.6px); background-size:12px 12px; }
 
-  /* 홈 */
-  .cont { display:flex; gap:14px; align-items:center; width:100%; text-align:left; background:var(--yolk); color:var(--onyolk); border:var(--bd) solid var(--line); border-radius:22px; padding:16px; box-shadow:4px 4px 0 var(--line); cursor:pointer; }
-  .cont .play { width:54px; height:54px; border-radius:50%; background:var(--onyolk); color:var(--yolk); display:grid; place-items:center; font-size:1.3rem; flex:none; }
-  .cont b { font-family:"Jua",sans-serif; font-weight:400; font-size:1.4rem; display:block; }
-  .cont small { font-size:.88rem; }
-  .tiles { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px; }
-  @media (min-width:640px) { .tiles { grid-template-columns:repeat(3,1fr); } }
-  .tile { min-height:112px; display:flex; flex-direction:column; justify-content:space-between; align-items:flex-start; text-align:left; border:var(--bd) solid var(--line); border-radius:20px; padding:14px; box-shadow:var(--sh); cursor:pointer; color:var(--text); }
-  .tile:active, .cont:active { transform:translate(2px,2px); box-shadow:1px 1px 0 var(--line); }
-  .tile .i { font-size:2rem; line-height:1; }
-  .tile b { font-family:"Jua",sans-serif; font-weight:400; font-size:1.25rem; display:block; }
-  .tile small { font-size:.8rem; color:var(--muted); }
-  .t-list { background:var(--mint); } .t-flash { background:var(--peach); } .t-talk { background:var(--sky); }
-  .t-listen { background:var(--butter); } .t-game { background:var(--lilac); } .t-rec { background:var(--card); }
-  .today { display:flex; gap:12px; align-items:center; background:var(--card); border:var(--bd) solid var(--line); border-radius:20px; padding:16px; }
-  .today .jp { font-size:2.2rem; font-weight:900; line-height:1.1; }
-  .today .rd { display:inline-block; background:var(--mint); border-radius:8px; padding:0 8px; font-weight:700; font-size:.88rem; margin-top:6px; }
-  .today .say { margin-left:auto; flex:none; width:56px; height:56px; border-radius:50%; border:var(--bd) solid var(--line); background:var(--yolk); color:var(--onyolk); font-size:1.4rem; }
+  /* 머리: 흰 안내판 + 노선 띠 + 점자 블록 */
+  header { max-width:none; padding:0; background:var(--card); }
+  .top { max-width:820px; margin:auto; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;
+    padding:12px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px)); }
+  h1 { margin:0; font-family:var(--jpf); font-size:1.3rem; font-weight:900; letter-spacing:.01em; display:flex; align-items:center; gap:8px; }
+  h1 .lg { width:30px; height:30px; border-radius:7px; background:var(--navy); color:#fff; display:grid; place-items:center; font-size:.8rem; font-weight:900; }
+  h1 small { font-size:.7rem; font-weight:700; color:var(--muted); }
+  .sizer { display:flex; border:2px solid var(--navy); border-radius:8px; overflow:hidden; }
+  .sizer button { border:0; background:none; min-width:40px; min-height:36px; cursor:pointer; font-weight:900; }
+  .sizer button[aria-pressed="true"] { background:var(--navy); color:#fff; }
+  @media (prefers-color-scheme: dark) { .sizer { border-color:var(--text); } .sizer button[aria-pressed="true"] { background:var(--text); color:var(--card); } }
+  .rate { max-width:820px; margin:0 auto; padding:0 max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px)); font-size:.85rem; color:var(--muted); }
+  .rate input { accent-color:var(--L-list); }
+  .stripe { height:8px; background:linear-gradient(90deg,var(--L-list) 0 16.6%,var(--L-flash) 0 33.3%,var(--L-talk) 0 50%,var(--L-listen) 0 66.6%,var(--L-game) 0 83.3%,var(--L-rec) 0); }
+  main { padding:18px max(16px,env(safe-area-inset-left,0px)) 24px; }
+  h2 { font-family:var(--jpf); font-size:1.1rem; font-weight:900; margin:24px 0 10px; display:flex; align-items:center; gap:8px; }
+  h2::before { content:""; width:6px; height:1.2em; border-radius:3px; background:var(--lc); flex:none; }
 
-  /* 기존 탭 부품을 도시락 모양으로 */
-  .bar { color:var(--muted); }
-  .bar label, .lis-opts label { cursor:pointer; }
-  .word, .phrase, .flash, .lis-now, .rec-hero, .rec-stat, .badge, .cal .d { border:var(--bd) solid var(--line); }
-  .word { border-radius:18px; padding:14px; margin-bottom:10px; }
+  /* 역 번호 배지 (예: T 05) */
+  .no { display:inline-grid; place-items:center; width:46px; height:46px; border-radius:9px; border:4px solid var(--c,var(--lc)); background:var(--card);
+    font-weight:900; line-height:1; flex:none; color:var(--text); font-family:var(--jpf); }
+  .no i { font-style:normal; font-size:.62rem; } .no b { font-size:1.05rem; }
+
+  /* 탭 머리: 미니 역 이름판 */
+  .lineh { background:var(--card); border-radius:10px; overflow:hidden; margin-bottom:16px; box-shadow:0 1px 0 var(--line); }
+  .lineh .in { display:flex; align-items:center; gap:12px; padding:12px 14px; }
+  .lineh b.n { display:block; font-size:1.25rem; font-weight:900; font-family:var(--jpf); line-height:1.2; }
+  .lineh small { color:var(--muted); font-size:.8rem; }
+  .lineh .band { height:8px; background:var(--lc); }
+
+  /* 아래 메뉴: 남색 띠, 지금 탭은 역 번호 배지처럼 */
+  nav { position:fixed; left:0; right:0; bottom:0; z-index:20; background:var(--navy); border:0; display:grid; grid-template-columns:repeat(7,1fr); gap:0; overflow:visible;
+    padding:6px max(4px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(4px,env(safe-area-inset-left,0px)); box-shadow:0 -4px 0 var(--tenji); }
+  nav button { display:flex; flex-direction:column; align-items:center; gap:3px; padding:4px 0; min-height:58px; font-size:.7rem; border:0; color:#c9d1e3; white-space:nowrap; background:none; }
+  nav button .i { width:34px; height:34px; border-radius:8px; display:grid; place-items:center; font-size:1.05rem; border:3px solid var(--c); background:#ffffff14; }
+  nav button[aria-selected="true"] { color:#fff; font-weight:700; border:0; }
+  nav button[aria-selected="true"] .i { background:#fff; }
+  nav [data-tab=home] .i { --c:#ffffff; } nav [data-tab=list] .i { --c:var(--L-list); } nav [data-tab=flash] .i { --c:var(--L-flash); } nav [data-tab=talk] .i { --c:var(--L-talk); }
+  nav [data-tab=listen] .i { --c:var(--L-listen); } nav [data-tab=rec] .i { --c:var(--L-rec); } nav [data-tab=game] .i { --c:var(--L-game); }
+
+  /* 홈: 이어서 하기 = 차내 안내 화면 */
+  .cont { display:flex; gap:14px; align-items:center; width:100%; text-align:left; background:var(--lcd); color:#fff; border:0; border-radius:12px; padding:14px 16px 14px 20px; cursor:pointer; position:relative; overflow:hidden; box-shadow:inset 0 0 0 3px #26324d; }
+  .cont::before { content:""; position:absolute; left:0; top:0; bottom:0; width:8px; background:var(--L-flash); }
+  .cont .play { width:46px; height:46px; border-radius:50%; background:var(--next); color:var(--lcd); display:grid; place-items:center; font-size:1.1rem; flex:none; }
+  .cont .nx { display:block; color:var(--next); font-weight:900; font-size:.8rem; letter-spacing:.06em; }
+  .cont b { font-family:var(--jpf); font-weight:900; font-size:1.35rem; display:block; line-height:1.25; }
+  .cont small { color:#b9c4dd; font-size:.85rem; }
+
+  /* 홈: 메뉴 = 발차 안내판 */
+  .board { margin-top:16px; background:#0b0b0b; border-radius:10px; padding:8px 0 0; box-shadow:inset 0 0 0 4px #2b2b2b; overflow:hidden; font-family:var(--dot); }
+  .board .bh { display:grid; grid-template-columns:62px 1fr 44px; gap:8px; padding:4px 14px 6px; color:#9aa0aa; font-size:.7rem; border-bottom:1px solid #333; font-family:var(--jpf); }
+  .board .row { display:grid; grid-template-columns:62px 1fr 44px; gap:8px; align-items:center; width:100%; text-align:left; background:none; border:0; border-bottom:1px solid #222; padding:10px 14px; cursor:pointer; color:var(--led); }
+  .board .row:active { background:#1b1b1b; }
+  .board .kind { font-family:var(--jpf); font-weight:900; font-size:.8rem; text-align:center; padding:3px 0; border-radius:4px; color:#fff; background:var(--c); }
+  .board .dest b { display:block; font-family:var(--dot),"Noto Sans KR"; font-size:1.15rem; font-weight:400; color:var(--led); line-height:1.25; }
+  .board .dest small { color:var(--ledg); font-size:.75rem; }
+  .board .pl { text-align:center; font-size:1.3rem; color:#fff; }
+  .board .pl small { display:block; font-size:.6rem; color:#9aa0aa; font-family:var(--jpf); }
+  .ticker { overflow:hidden; white-space:nowrap; color:var(--ledg); padding:8px 0; font-size:.9rem; border-top:1px solid #333; }
+  .ticker span { display:inline-block; padding-left:100%; animation:tick 22s linear infinite; }
+  @keyframes tick { to { transform:translateX(-100%); } }
+  .tiles { display:none; }
+
+  /* 홈: 오늘의 단어 = 역 이름판 */
+  .eki { background:var(--card); border-radius:10px; overflow:hidden; box-shadow:0 1px 0 var(--line), 0 0 0 1px var(--line); }
+  .eki .top2 { display:flex; align-items:center; gap:12px; padding:16px 16px 8px; position:relative; }
+  .eki .nm { flex:1; text-align:center; min-width:0; }
+  .eki .kj { font-family:var(--jpf); font-weight:900; font-size:2.8rem; line-height:1.1; letter-spacing:.08em; }
+  .eki .kn { font-family:var(--jpf); font-weight:700; font-size:1.05rem; }
+  .eki .ro { font-family:"Inter","Noto Sans KR",sans-serif; font-size:.85rem; color:var(--muted); letter-spacing:.05em; }
+  .eki .ko { display:inline-block; margin-top:6px; border:2px solid var(--L-list); border-radius:6px; padding:0 10px; font-weight:900; }
+  .eki .say { width:48px; height:48px; border-radius:50%; background:var(--L-list); color:#fff; border:0; font-size:1.2rem; flex:none; }
+  .eki .band { display:flex; justify-content:space-between; background:var(--L-list); color:#fff; font-weight:900; padding:4px 12px; font-size:1.05rem; }
+  .eki .pn { display:flex; justify-content:space-between; gap:10px; padding:6px 12px 10px; font-size:.85rem; }
+  .eki .pn span { min-width:0; } .eki .pn span:last-child { text-align:right; }
+  .eki .pn b { font-family:var(--jpf); display:block; } .eki .pn small { color:var(--muted); }
+
+  /* 단어장 = 노선도. 역(동그라미) 옆에 역 번호 */
+  .bar { color:var(--muted); font-weight:700; }
+  .bar input[type=checkbox], .lis-opts input[type=checkbox] { width:20px; height:20px; accent-color:var(--lc); }
+  #words { position:relative; counter-reset:st; }
+  #words::before { content:""; position:absolute; left:22px; top:10px; bottom:10px; width:8px; border-radius:4px; background:var(--lc); }
+  .word { position:relative; counter-increment:st; background:var(--card); border:0; border-radius:10px; padding:14px 60px 14px 6px; margin:0 0 8px; box-shadow:0 1px 0 var(--line); align-items:center; }
+  .word::after { content:"T" counter(st, decimal-leading-zero); position:absolute; right:10px; top:12px; border:3px solid var(--lc); border-radius:7px; padding:1px 5px; font-weight:900; font-size:.75rem; background:var(--card); }
   .word.done { background:var(--done); }
-  .word input, .bar input[type=checkbox], .lis-opts input[type=checkbox] { width:22px; height:22px; accent-color:var(--accent); }
-  .jp { font-size:1.45rem; font-weight:800; }
-  .flash { border-radius:24px; box-shadow:4px 4px 0 var(--line); min-height:300px; }
-  .flash .jp { font-size:3rem; }
-  .controls button, .bar button, .seg button, .cal-head button, .rec-lang { min-height:48px; padding:8px 18px; border:var(--bd) solid var(--line); background:var(--card); color:var(--text); border-radius:999px; font-weight:700; box-shadow:2px 2px 0 var(--line); }
-  .controls button:active, .seg button:active { transform:translate(2px,2px); box-shadow:none; }
-  .lis-big { background:var(--yolk) !important; color:var(--onyolk) !important; border-color:var(--line) !important; font-size:1.2rem; }
-  .seg button { border-radius:16px; }
-  .seg button[aria-pressed="true"] { background:var(--yolk); color:var(--onyolk); border-color:var(--line); }
-  .phrase { border-radius:16px; padding:12px 14px; margin-bottom:8px; }
-  .lis-list .phrase.on { background:var(--butter); border-color:var(--line); }
-  .say { font-size:1.15rem; min-width:40px; min-height:40px; }
-  .lis-now, .rec-hero { border-radius:22px; box-shadow:var(--sh); }
-  .lis-opts select { border:var(--bd) solid var(--line); border-radius:10px; min-height:40px; }
-  .rec-hero .big { color:var(--accent); font-family:"Jua",sans-serif; font-weight:400; }
-  .rec-today { border-radius:14px; }
-  .rec-today.todo { border:var(--bd) dashed var(--accent); }
-  .rec-stat { border-radius:16px; }
+  .word input { appearance:none; -webkit-appearance:none; width:36px; height:36px; margin:0; border-radius:50%; border:7px solid var(--lc); background:var(--card); position:relative; z-index:1; cursor:pointer; flex:none; }
+  .word input:checked { background:var(--lc); box-shadow:inset 0 0 0 4px var(--card); }
+  .jp { font-family:var(--jpf); font-size:1.45rem; font-weight:900; }
+  .yomi { font-weight:700; }
+
+  /* 카드 = 차내 안내 화면 */
+  .flash { background:var(--lcd); color:#fff; border:0; border-radius:12px; min-height:300px; position:relative; overflow:hidden; padding:52px 20px 48px; box-shadow:inset 0 0 0 4px #26324d; }
+  .flash::before { content:"次は  つぎは  다음은  Next"; position:absolute; left:0; right:0; top:0; padding:8px 14px; text-align:left; background:#00000055; color:var(--next); font-weight:900; font-size:.85rem; letter-spacing:.06em; border-left:8px solid var(--lc); }
+  .flash::after { content:"◀◀  こちら側のドアが開きます · 이쪽 문이 열립니다"; position:absolute; left:0; right:0; bottom:0; padding:7px; background:#1c2a4a; color:var(--ledg); font-weight:700; font-size:.75rem; }
+  .flash .jp { font-size:3.2rem; color:#fff; }
+  .flash .ex, .flash .back .ex { color:#b9c4dd; }
+  .flash.q::before { content:"もんだい · 문제 · Question"; }
+  .flash.q::after { content:""; padding:0; }
+  .controls button, .bar button, .seg button, .cal-head button, .rec-lang, .join button, .ostatus button, .emotes button { min-height:48px; padding:8px 18px; border:2px solid var(--navy); background:var(--card); color:var(--text); border-radius:8px; font-weight:900; cursor:pointer; box-shadow:0 3px 0 var(--navy); }
+  @media (prefers-color-scheme: dark) { .controls button, .bar button, .seg button, .cal-head button, .rec-lang, .join button { border-color:var(--muted); box-shadow:0 3px 0 var(--muted); } }
+  .controls button:active, .seg button:active, .choices button:active, .modes button:active { transform:translateY(2px); box-shadow:0 1px 0 var(--navy); }
+  .lis-big { background:var(--lc) !important; color:#fff !important; border-color:var(--lc) !important; font-size:1.15rem; }
+  .seg button[aria-pressed="true"] { background:var(--navy); color:#fff; }
+
+  /* 회화 */
+  .phrase { background:var(--card); border:0; border-left:6px solid var(--lc); border-radius:8px; padding:12px 14px; margin-bottom:8px; box-shadow:0 1px 0 var(--line); }
+  .phrase > div:first-child { font-family:var(--jpf); font-weight:700; }
+  .lis-list .phrase.on { background:var(--done); }
+  .say { font-size:1.1rem; min-width:40px; min-height:40px; }
+
+  /* 듣기 = 발차 안내판 */
+  .lis-now { background:#0b0b0b; color:#fff; border:0; border-radius:10px; box-shadow:inset 0 0 0 4px #2b2b2b; }
+  .lis-now .jp { color:var(--led); font-family:var(--dot); font-weight:400; }
+  .lis-now .ko { color:var(--ledg); }
+  .lis-now .lis-step, .lis-now .pod-time { color:#9aa0aa; }
+  .lis-opts select { border:2px solid var(--navy); border-radius:8px; min-height:40px; background:var(--card); }
+
+  /* 기록 = IC카드 + 역 스탬프 */
+  .rec-hero { clear:both; border:0; border-radius:16px; color:#fff; text-align:left; padding:20px 18px; position:relative; overflow:hidden;
+    background:linear-gradient(120deg,#0f8f6a 0%,#2fa84f 45%,#9bd36a 100%); box-shadow:0 3px 0 var(--line); }
+  .rec-hero::before { content:""; position:absolute; right:18px; top:18px; width:42px; height:32px; border-radius:6px; background:linear-gradient(135deg,#f6dd8a,#c9a43b); box-shadow:inset 0 0 0 2px #a98320; }
+  .rec-hero::after { content:"KJ PASS  ⇄  日韓パス"; position:absolute; left:18px; bottom:10px; font-size:.68rem; font-weight:900; letter-spacing:.14em; opacity:.85; }
+  .rec-hero .big { color:#fff; font-weight:900; font-family:var(--jpf); }
+  .rec-hero .sub { color:#eafff0; }
+  .rec-today { background:#ffffff2e; color:#fff; border-radius:8px; margin-bottom:18px; }
+  .rec-today.todo { border:2px dashed #fff; background:transparent; }
+  .rec-stat { border:0; border-top:6px solid var(--lc); border-radius:8px; }
   .cal { grid-template-columns:repeat(7,minmax(0,1fr)); }
-  .cal .d { border-width:1.5px; border-radius:10px; }
-  .cal .d.today { border-color:var(--accent); border-width:3px; }
-  .badge { border-radius:16px; }
-  #toast { bottom:calc(96px + env(safe-area-inset-bottom,0px)); border:var(--bd) solid var(--line); background:var(--yolk); color:var(--onyolk); }
-  @media (prefers-reduced-motion:reduce) { * { transition:none !important; } }
+  .cal .d { border:0; border-radius:8px; box-shadow:inset 0 0 0 1.5px var(--line); }
+  .cal .d.on { background:var(--card); color:var(--ink); font-weight:900; box-shadow:inset 0 0 0 3px var(--ink); border-radius:50%; transform:rotate(-8deg); }
+  .cal .d.on::after { content:"着"; font-size:.7rem; line-height:1; font-family:var(--jpf); }
+  .cal .d.today { box-shadow:inset 0 0 0 3px var(--text); }
+  .badge { border:3px double var(--ink); border-radius:50%; aspect-ratio:1; display:flex; flex-direction:column; justify-content:center; color:var(--ink); background:var(--card); font-weight:700; padding:6px; }
+  .badge small { color:var(--muted); }
+  .badge.lock { border-color:var(--muted); color:var(--muted); }
+
+  /* 게임: 모드 = 승차권, 보기 = 발매기 버튼 */
+  .modes button { position:relative; border:0; border-radius:6px; padding:14px 14px 14px 26px; color:#2b3a2f;
+    background-color:#e6f2e9; background-image:repeating-linear-gradient(135deg,#d5e9db 0 2px,transparent 2px 7px);
+    box-shadow:0 2px 0 #b7cdbd; }
+  .modes button::before { content:""; position:absolute; left:10px; top:8px; bottom:8px; border-left:2px dashed #93ad9a; }
+  .modes button b { font-family:var(--jpf); }
+  .modes button span { color:#4b5d50; }
+  .choices button { border:2px solid var(--navy); border-radius:10px; box-shadow:0 3px 0 var(--navy); background:var(--card); }
+  .choices button.ok { background:var(--done); border-color:var(--L-list); }
+  .choices button.ng { border-color:var(--ink); color:var(--ink); }
+  .timer div { background:var(--next); }
+  #rCv { border:0; border-radius:12px; }
+  .join input { border:2px solid var(--navy); border-radius:8px; }
+  #toast { bottom:calc(98px + env(safe-area-inset-bottom,0px)); border-radius:10px; background:var(--lcd); color:var(--next); border:2px solid var(--next); }
+  @media (min-width:700px) { nav { max-width:720px; margin:auto; bottom:12px; border-radius:14px; } }
+  @media (prefers-reduced-motion:reduce) { * { transition:none !important; } .ticker span { animation:none; padding-left:14px; } }
+
+  /* 게임하는 동안: 위·아래 메뉴를 숨기고 게임만 크게 */
+  [hidden] { display:none !important; }
+  body.playing { padding-bottom:0; }
+  body.playing #rCv { height:min(78vh,640px); }
+  body.playing header, body.playing nav, body.playing #game > .lineh { display:none; }
+  body.playing main { padding-top:max(12px, env(safe-area-inset-top,0px)); }
+  .gexit { display:none; }
+  body.playing .gexit { display:inline-flex; align-items:center; gap:6px; margin:0 0 10px auto; min-height:44px; padding:6px 14px; border:2px solid var(--navy); background:var(--card); color:var(--text); border-radius:8px; font-weight:900; cursor:pointer; }
+  body.playing #game { display:flex; flex-direction:column; }
+  @media (prefers-color-scheme: dark) { body.playing .gexit { border-color:var(--muted); } }
 </style>
 </head>
 <body>
 <header>
   <div class="top">
-    <h1>한일<em>냠냠</em></h1>
+    <h1><span class="lg">KJ</span><span>한일 전철<br><small>日韓でんしゃ · KJ Line</small></span></h1>
     <div class="tools">
       <div class="sizer" role="group" aria-label="글자 크기 · 文字サイズ">
         <button data-fs="1" aria-pressed="false" aria-label="보통 글자">가</button>
@@ -305,6 +405,7 @@
 
   <section id="rec" hidden></section>
   <section id="game" hidden>
+    <button class="gexit" id="gExit">✕ 게임 나가기 · やめる</button>
     <div id="gSetup">
       <h2>🏃 갈림길 러너 · 分かれ道ランナー</h2>
       <p class="ex">맞는 뜻의 문으로 달려가면 친구들이 늘어나요! 틀리면 줄어들어요. 좌우로 밀거나 ←→ 키.<br>正しい意味のゲートを通ると仲間が増える！間違えると減るよ。左右にスワイプか←→キー。</p>
@@ -992,7 +1093,10 @@ const BEST = "jp-game-best";
 const getBest = () => { try { return JSON.parse(localStorage.getItem(BEST)) || {}; } catch { return {}; } };
 const showBest = () => { const b = getBest(); $("gBest").textContent = `최고 점수 · ベスト: 🇰🇷 ${b.ko || 0} / 🇯🇵 ${b.ja || 0}`; };
 const pick = (arr, k) => [...arr].sort(() => Math.random() - 0.5).slice(0, k);
-const view = v => ["gSetup", "gPlay", "gEnd", "cPlay", "cEnd", "rPlay", "rEnd"].forEach(id => $(id).hidden = id !== v);
+let view = v => ["gSetup", "gPlay", "gEnd", "cPlay", "cEnd", "rPlay", "rEnd"].forEach(id => $(id).hidden = id !== v);
+// 게임하는 동안엔 위·아래 메뉴를 숨김 (게임 나가기 버튼만 남김)
+const _view = view;
+view = v => { _view(v); const on = ["gPlay", "cPlay", "rPlay"].includes(v); document.body.classList.toggle("playing", on); if (on) scrollTo(0, 0); };
 
 const makeQs = () => pick(W.map((_, i) => i), PER).map(w => ({ w, opts: pick([w, ...pick(W.map((_, i) => i).filter(i => i !== w), 3)], 4) }));
 function startGame(mode, qs = makeQs()) {
@@ -1422,6 +1526,75 @@ const setFs = v => {
 document.querySelectorAll("[data-fs]").forEach(b => b.onclick = () => setFs(b.dataset.fs));
 try { const v = localStorage.getItem("jp-fs"); if (v) setFs(v); } catch {}
 renderHome();
+</script>
+<script>
+// 일본 전철 버전: 머리·탭 머리·홈(차내 화면, 발차 안내판, 역 이름판)을 바꿔 그림
+document.querySelector("header").insertAdjacentHTML("beforeend", '<div class="stripe"></div><div class="tenji"></div>');
+
+// 가나 → 로마자 (역 이름판 표기용, 간단한 헵번식)
+const RO = {あ:"a",い:"i",う:"u",え:"e",お:"o",か:"ka",き:"ki",く:"ku",け:"ke",こ:"ko",が:"ga",ぎ:"gi",ぐ:"gu",げ:"ge",ご:"go",さ:"sa",し:"shi",す:"su",せ:"se",そ:"so",ざ:"za",じ:"ji",ず:"zu",ぜ:"ze",ぞ:"zo",た:"ta",ち:"chi",つ:"tsu",て:"te",と:"to",だ:"da",ぢ:"ji",づ:"zu",で:"de",ど:"do",な:"na",に:"ni",ぬ:"nu",ね:"ne",の:"no",は:"ha",ひ:"hi",ふ:"fu",へ:"he",ほ:"ho",ば:"ba",び:"bi",ぶ:"bu",べ:"be",ぼ:"bo",ぱ:"pa",ぴ:"pi",ぷ:"pu",ぺ:"pe",ぽ:"po",ま:"ma",み:"mi",む:"mu",め:"me",も:"mo",や:"ya",ゆ:"yu",よ:"yo",ら:"ra",り:"ri",る:"ru",れ:"re",ろ:"ro",わ:"wa",を:"o",ん:"n"};
+function romaji(k) {
+  let s = "";
+  for (let n = 0; n < k.length; n++) {
+    const c = k[n], y = { ゃ:"a", ゅ:"u", ょ:"o" }[k[n + 1]];
+    if (c === "っ") { const nx = RO[k[n + 1]] || ""; s += nx[0] === "c" ? "t" : nx[0] || ""; continue; }
+    let r = RO[c] ?? c;
+    if (y) { r = /^(shi|chi|ji)$/.test(r) ? r.slice(0, -1) + y : r.slice(0, -1) + "y" + y; n++; }
+    s += r;
+  }
+  return s.replace(/ou|oo/g, "ō").replace(/uu/g, "ū").replace(/^./, m => m.toUpperCase());
+}
+
+// 탭 머리: 미니 역 이름판
+const LINES = { list:["T","01","단어장","単語帳 · Tango-chō"], flash:["C","02","카드","カード · Kādo"], talk:["K","03","상황 회화","会話 · Kaiwa"],
+  listen:["L","04","듣기","リスニング · Risuningu"], game:["G","05","게임","ゲーム · Gēmu"], rec:["R","06","내 기록","記録 · Kiroku"] };
+const lineh = id => { if ($(id).firstElementChild?.classList.contains("lineh")) return; const [c, n, ko, ja] = LINES[id];
+  $(id).insertAdjacentHTML("afterbegin", `<div class="lineh"><div class="in"><span class="no"><i>${c}</i><b>${n}</b></span><div><b class="n">${ko}</b><small>${ja}</small></div></div><div class="band"></div><div class="tenji"></div></div>`); };
+for (const id in LINES) { lineh(id); new MutationObserver(() => lineh(id)).observe($(id), { childList:true }); }
+
+// 이어서 하기 = 차내 안내 화면
+$("contT").insertAdjacentHTML("beforebegin", '<span class="nx">次は · 다음은 · Next</span>');
+// 문 차임 (누를 때만)
+function chime() {
+  try {
+    const a = chime.ctx || (chime.ctx = new (window.AudioContext || window.webkitAudioContext)());
+    [[659, 0], [523, .32]].forEach(([f, t]) => { const o = a.createOscillator(), g = a.createGain(); o.frequency.value = f; o.type = "sine";
+      g.gain.setValueAtTime(.0001, a.currentTime + t); g.gain.exponentialRampToValueAtTime(.18, a.currentTime + t + .02); g.gain.exponentialRampToValueAtTime(.0001, a.currentTime + t + .6);
+      o.connect(g).connect(a.destination); o.start(a.currentTime + t); o.stop(a.currentTime + t + .65); });
+  } catch {}
+}
+$("cont").addEventListener("click", chime);
+
+// 메뉴 = 발차 안내판
+const TRAINS = [["各停","--L-list","list","단어장","単語帳",1],["快速","--L-flash","flash","카드","カード",2],["急行","--L-talk","talk","상황 회화","会話",3],
+  ["普通","--L-listen","listen","듣기","リスニング",4],["特急","--L-game","game","게임","ゲーム",5],["準急","--L-rec","rec","내 기록","記録",6]];
+document.querySelector(".tiles").insertAdjacentHTML("afterend", `<div class="board" role="list">
+  <div class="bh"><span>種別 종류</span><span>行先 행선지</span><span>番線</span></div>
+  ${TRAINS.map(([k, c, id, ko, ja, p]) => `<button class="row" role="listitem" data-go2="${id}"><span class="kind" style="--c:var(${c})">${k}</span><span class="dest"><b>${ko} 行</b><small>${ja} 行き</small></span><span class="pl">${p}<small>番線</small></span></button>`).join("")}
+  <div class="ticker" aria-hidden="true"><span>まもなく 1番線に 各停 単語帳行きが まいります · 곧 1번 승강장에 단어장행 열차가 들어옵니다 · 黄色い線の内側でお待ちください · 노란 선 안쪽에서 기다려 주세요</span></div>
+</div>`);
+document.querySelectorAll("[data-go2]").forEach(b => b.onclick = () => goTab(b.dataset.go2));
+
+// 오늘의 단어 = 역 이름판
+const _homeBase = renderHome;
+renderHome = function () {
+  _homeBase();
+  const d = new Date(), n = (d.getFullYear() * 372 + d.getMonth() * 31 + d.getDate()) % W.length;
+  const w = W[n], p = W[(n + W.length - 1) % W.length], q = W[(n + 1) % W.length];
+  $("today").className = "eki";
+  $("today").innerHTML = `<div class="top2"><span class="no" style="--c:var(--L-list)"><i>T</i><b>${String(n + 1).padStart(2, "0")}</b></span>
+    <div class="nm"><div class="kn" lang="ja">${w[1]}</div><div class="kj" lang="ja">${w[0]}</div><div class="ro">${romaji(w[1])}</div><span class="ko">${w[2]}</span></div>
+    <button class="say" data-say="${w[1]}" aria-label="읽기: ${w[1]}">🔊</button></div>
+    <div class="band"><span>◀</span><span>▶</span></div>
+    <div class="pn"><span><b lang="ja">${p[0]}</b><small>${romaji(p[1])}</small></span><span><b lang="ja">${q[0]}</b><small>${romaji(q[1])}</small></span></div>`;
+};
+renderHome();
+
+$("gExit").onclick = () => {
+  if (!$("gPlay").hidden) $("gQuit").click();
+  else if (!$("rPlay").hidden) $("rQuit").click();
+  else { clearInterval(C.clock); clearTimeout(C.hint); view("gSetup"); }
+};
 </script>
 </body>
 </html>
