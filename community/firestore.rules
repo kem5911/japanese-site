@@ -1,0 +1,79 @@
+// 한일 전철 伝言板(게시판) — Firebase 콘솔 > Firestore Database > 규칙(Rules) 에 통째로 붙여 넣고 게시(Publish).
+// 맨 아래쪽 'ADMIN-KEY-HERE' 는 운영자 비밀번호로 바꿔서 붙여 넣으세요.
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function signedIn() { return request.auth != null; }
+    function me() { return request.auth.uid; }
+    function isAdmin() { return signedIn() && exists(/databases/$(db)/documents/admins/$(me())); }
+    function d() { return request.resource.data; }
+    function okText() {
+      return d().nick is string && d().nick.size() >= 1 && d().nick.size() <= 16
+        && d().body is string && d().body.size() >= 1 && d().body.size() <= 500
+        && (isAdmin() || !d().body.matches('(?is).*(https?://|www[.]).*'));
+    }
+    // 같은 사람은 15초에 한 번만 쓰기 (users/{uid}.last 를 같은 묶음에서 지금 시각으로 바꿔야 함)
+    function stamped() { return getAfter(/databases/$(db)/documents/users/$(me())).data.last == request.time; }
+    function onlyChanged(keys) { return d().diff(resource.data).affectedKeys().hasOnly(keys); }
+    function newBase() {
+      return signedIn() && stamped() && okText() && d().uid == me() && d().lang in ['ko', 'ja']
+        && d().createdAt == request.time && d().reports == 0 && d().hidden == false && d().admin == isAdmin();
+    }
+    // 신고: 한 사람 한 번, 3번 모이면 자동으로 숨김 (reports/{uid} 문서를 같은 묶음에서 만들어야 함)
+    function reportOk(path) {
+      return onlyChanged(['reports', 'hidden']) && d().reports == resource.data.reports + 1
+        && d().hidden == (resource.data.hidden || d().reports >= 3)
+        && existsAfter(path) && !exists(path);
+    }
+
+    match /users/{uid} {
+      allow get: if signedIn() && me() == uid;
+      allow create: if signedIn() && me() == uid && d().keys().hasOnly(['last']) && d().last == request.time;
+      allow update: if signedIn() && me() == uid && d().keys().hasOnly(['last']) && d().last == request.time
+        && (isAdmin() || resource.data.last < request.time - duration.value(15, 's'));
+    }
+
+    match /posts/{pid} {
+      allow read: if true;
+      allow create: if newBase()
+        && d().keys().hasOnly(['uid', 'nick', 'body', 'cat', 'lang', 'createdAt', 'likes', 'replies', 'reports', 'hidden', 'admin'])
+        && d().cat in ['idea', 'bug', 'ask', 'free'] && d().likes == 0 && d().replies == 0;
+      allow delete: if signedIn() && (resource.data.uid == me() || isAdmin());
+      allow update: if signedIn() && (
+        (onlyChanged(['likes']) && d().likes == resource.data.likes + 1
+          && existsAfter(/databases/$(db)/documents/posts/$(pid)/likes/$(me()))
+          && !exists(/databases/$(db)/documents/posts/$(pid)/likes/$(me())))
+        || reportOk(/databases/$(db)/documents/posts/$(pid)/reports/$(me()))
+        || (onlyChanged(['replies']) && (d().replies == resource.data.replies + 1 || d().replies == resource.data.replies - 1))
+        || (isAdmin() && onlyChanged(['hidden', 'reports'])));
+
+      match /likes/{uid} {
+        allow get: if signedIn() && me() == uid;
+        allow create: if signedIn() && me() == uid && d().keys().size() == 0;
+      }
+      match /reports/{uid} {
+        allow create: if signedIn() && me() == uid && d().keys().size() == 0;
+      }
+      match /replies/{rid} {
+        allow read: if true;
+        allow create: if newBase()
+          && d().keys().hasOnly(['uid', 'nick', 'body', 'lang', 'createdAt', 'reports', 'hidden', 'admin'])
+          && exists(/databases/$(db)/documents/posts/$(pid));
+        allow delete: if signedIn() && (resource.data.uid == me() || isAdmin());
+        allow update: if signedIn() && (
+          reportOk(/databases/$(db)/documents/posts/$(pid)/replies/$(rid)/reports/$(me()))
+          || (isAdmin() && onlyChanged(['hidden', 'reports'])));
+
+        match /reports/{uid} {
+          allow create: if signedIn() && me() == uid && d().keys().size() == 0;
+        }
+      }
+    }
+
+    // 운영자: 앱 주소에 ?admin=비밀번호 를 붙여 열면 그 폰이 여기에 등록됨
+    match /admins/{uid} {
+      allow get: if signedIn() && me() == uid;
+      allow create: if signedIn() && me() == uid && d().keys().hasOnly(['key']) && d().key == 'ADMIN-KEY-HERE';
+    }
+  }
+}
