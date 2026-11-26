@@ -32,6 +32,19 @@
   .phrase { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:6px; }
   .phrase .ko { color:var(--muted); font-size:.95rem; }
   .say { border:0; background:none; cursor:pointer; font-size:1rem; padding:2px 4px; vertical-align:middle; }
+  .modes { display:grid; gap:8px; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); }
+  .modes button, .choices button { text-align:left; padding:14px; border:1px solid var(--line); background:var(--card); color:var(--text); border-radius:10px; cursor:pointer; font:inherit; }
+  .modes button span { display:block; color:var(--muted); font-size:.9rem; margin-top:4px; }
+  .flash.q { min-height:180px; cursor:default; }
+  .choices { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
+  .choices button { text-align:center; font-size:1.1rem; min-height:64px; }
+  .choices button.ok { background:var(--done); border-color:#3a9a55; }
+  .choices button.ng { border-color:var(--accent); color:var(--accent); }
+  .choices button:disabled { cursor:default; }
+  .timer { height:6px; background:var(--line); border-radius:3px; overflow:hidden; margin-bottom:10px; }
+  .timer div { height:100%; background:var(--accent); width:100%; }
+  nav { overflow-x:auto; }
+  nav button { white-space:nowrap; }
   .rate { display:flex; align-items:center; gap:8px; margin:0 0 10px; color:var(--muted); }
 </style>
 </head>
@@ -43,6 +56,7 @@
     <button role="tab" aria-selected="true" data-tab="list">단어장</button>
     <button role="tab" aria-selected="false" data-tab="flash">플래시카드</button>
     <button role="tab" aria-selected="false" data-tab="talk">실생활 회화</button>
+    <button role="tab" aria-selected="false" data-tab="game">🎮 게임 / ゲーム</button>
   </nav>
 </header>
 <main>
@@ -63,6 +77,30 @@
   </section>
 
   <section id="talk" hidden></section>
+
+  <section id="game" hidden>
+    <div id="gSetup">
+      <h2>🇰🇷 한·일 단어 대결 🇯🇵 日韓単語バトル</h2>
+      <p class="ex">10초 안에 뜻을 골라요. 빨리 맞힐수록 점수가 높아요.<br>10秒以内に意味を選んでください。早く当てるほど高得点！</p>
+      <div class="modes">
+        <button data-mode="ko"><b>🇰🇷 혼자 하기</b><span>일본어 단어 → 한국어 뜻</span></button>
+        <button data-mode="ja"><b>🇯🇵 ひとりで</b><span>韓国語の単語 → 日本語の意味</span></button>
+        <button data-mode="duel"><b>👥 둘이서 · ふたりで</b><span>한국인 vs 일본인, 번갈아 5문제씩<br>韓国人 vs 日本人、交代で5問ずつ</span></button>
+      </div>
+      <p class="ex" id="gBest"></p>
+    </div>
+    <div id="gPlay" hidden>
+      <div class="bar"><span id="gTurn"></span><span id="gScore"></span></div>
+      <div class="timer"><div id="gTime"></div></div>
+      <div class="flash q" id="gQ"></div>
+      <div class="choices" id="gChoices"></div>
+      <div class="controls"><button id="gNext" hidden>다음 ▶ 次へ</button><button id="gQuit">그만하기 · やめる</button></div>
+    </div>
+    <div id="gEnd" hidden>
+      <div class="flash" id="gResult"></div>
+      <div class="controls"><button id="gAgain">🔁 다시 · もう一度</button><button id="gMenu">메뉴 · メニュー</button></div>
+    </div>
+  </section>
 </main>
 
 <script>
@@ -180,21 +218,21 @@ const toggle = w => { done.has(w) ? done.delete(w) : done.add(w); save(); render
 const $ = id => document.getElementById(id);
 
 // 음성 읽기 (Web Speech API)
-const say = t => `<button class="say" data-say="${t}" aria-label="읽기: ${t}">🔊</button>`;
+const say = (t, lang = "ja") => `<button class="say" data-say="${t}" data-lang="${lang}" aria-label="읽기: ${t}">🔊</button>`;
 $("rate").oninput = () => $("rateVal").textContent = (+$("rate").value).toFixed(1) + "x";
-function speak(text) {
+function speak(text, lang = "ja") {
   if (!("speechSynthesis" in window)) return alert("이 브라우저는 음성 읽기를 지원하지 않아요.");
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = "ja-JP";
-  u.voice = speechSynthesis.getVoices().find(v => v.lang.replace("_", "-") === "ja-JP") || null;
+  u.lang = lang === "ko" ? "ko-KR" : "ja-JP";
+  u.voice = speechSynthesis.getVoices().find(v => v.lang.replace("_", "-") === u.lang) || null;
   u.rate = +$("rate").value;
   speechSynthesis.speak(u);
 }
 // 캡처 단계에서 처리해 카드 뒤집기/체크박스 토글이 같이 일어나지 않게 함
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-say]");
-  if (b) { e.preventDefault(); e.stopPropagation(); speak(b.dataset.say); }
+  if (b) { e.preventDefault(); e.stopPropagation(); speak(b.dataset.say, b.dataset.lang); }
 }, true);
 
 // 탭
@@ -246,6 +284,90 @@ $("skipDone").onchange = () => { i = 0; flipped = false; renderCard(); };
 $("talk").innerHTML = Object.entries(T).map(([title, list]) =>
   `<h2>${title}</h2>` + list.map(([jp, ko]) => `<div class="phrase"><div>${jp}${say(jp)}</div><div class="ko">${ko}</div></div>`).join("")
 ).join("");
+
+// 같은 한자어라 한국어 소리가 닮은 단어 (한자 → 한국 한자음)
+const HANJA = { 経験:"경험", 準備:"준비", 説明:"설명", 必要:"필요", 約束:"약속", 予定:"예정", 機会:"기회", 状況:"상황", 影響:"영향", 解決:"해결",
+  努力:"노력", 期待:"기대", 関係:"관계", 環境:"환경", 将来:"장래", 目的:"목적", 結果:"결과", 原因:"원인", 意見:"의견", 確認する:"확인", 正直:"정직", 突然:"돌연" };
+
+// 게임: 한·일 단어 대결
+// side "ko" = 한국어 사용자(일본어 단어를 보고 한국어 뜻 고르기), "ja" = 日本語ユーザー(韓国語を見て日本語を選ぶ)
+const G = { mode: null, qs: [], n: 0, score: { ko: 0, ja: 0 }, timer: null, left: 0 };
+const LIMIT = 10, PER = 10;
+const BEST = "jp-game-best";
+const getBest = () => { try { return JSON.parse(localStorage.getItem(BEST)) || {}; } catch { return {}; } };
+const showBest = () => { const b = getBest(); $("gBest").textContent = `최고 점수 · ベスト: 🇰🇷 ${b.ko || 0} / 🇯🇵 ${b.ja || 0}`; };
+const pick = (arr, k) => [...arr].sort(() => Math.random() - 0.5).slice(0, k);
+const view = v => ["gSetup", "gPlay", "gEnd"].forEach(id => $(id).hidden = id !== v);
+
+function startGame(mode) {
+  G.mode = mode; G.n = 0; G.score = { ko: 0, ja: 0 };
+  const words = pick(W.map((_, i) => i), PER);
+  // 둘이서: 번갈아 출제 (ko, ja, ko, ja ...)
+  G.qs = words.map((w, k) => ({ w, side: mode === "duel" ? (k % 2 ? "ja" : "ko") : mode }));
+  view("gPlay"); ask();
+}
+function ask() {
+  clearInterval(G.timer);
+  const { w, side } = G.qs[G.n];
+  const [jp, yomi, ko] = W[w];
+  const opts = pick([w, ...pick(W.map((_, i) => i).filter(i => i !== w), 3)], 4);
+  $("gTurn").textContent = (G.mode === "duel" ? (side === "ko" ? "🇰🇷 한국인 차례" : "🇯🇵 日本人の番") : "") + ` ${G.n + 1} / ${G.qs.length}`;
+  $("gScore").textContent = G.mode === "duel" ? `🇰🇷 ${G.score.ko} : ${G.score.ja} 🇯🇵` : `점수 · 得点 ${G.score[side]}`;
+  $("gQ").innerHTML = side === "ko"
+    ? `<div class="jp">${jp}${say(jp)}</div><div class="ex" style="margin-top:12px">이 단어의 뜻은?</div>`
+    : `<div class="jp">${ko}${say(ko, "ko")}</div><div class="ex" style="margin-top:12px">この韓国語の意味は？</div>`;
+  $("gChoices").innerHTML = "";
+  opts.forEach(o => {
+    const b = document.createElement("button");
+    b.innerHTML = side === "ko" ? W[o][2] : `${W[o][0]}<div class="ex" style="margin:0;font-size:.85rem">${W[o][1]}</div>`;
+    b.onclick = () => answer(o, b);
+    b.dataset.w = o;
+    $("gChoices").append(b);
+  });
+  $("gNext").hidden = true;
+  G.left = LIMIT * 10;
+  $("gTime").style.width = "100%";
+  G.timer = setInterval(() => {
+    G.left--; $("gTime").style.width = G.left / (LIMIT / 10) + "%";
+    if (G.left <= 0) answer(null, null);
+  }, 100);
+}
+function answer(o, btn) {
+  clearInterval(G.timer);
+  const { w, side } = G.qs[G.n];
+  const [jp, yomi, ko, ex] = W[w];
+  const right = o === w;
+  if (right) G.score[side] += 100 + Math.round(G.left);  // 기본 100점 + 남은 시간 보너스(최대 100)
+  $("gChoices").querySelectorAll("button").forEach(b => {
+    b.disabled = true;
+    if (+b.dataset.w === w) b.classList.add("ok");
+  });
+  if (btn && !right) btn.classList.add("ng");
+  // 정답 공개: 양쪽 언어를 모두 보여 줘서 서로의 언어를 접하게 함
+  $("gQ").innerHTML = `<div style="font-size:1.6rem">${right ? "⭕ 정답! 正解！" : o === null ? "⏰ 시간 초과 · 時間切れ" : "❌ 아쉬워요 · 残念"}</div>
+    <div class="back"><span class="jp">${jp}</span>${say(jp)} <span class="yomi">${yomi}</span><br>
+    🇰🇷 ${ko}${say(ko, "ko")}<br><span class="ex">${ex}</span>${say(ex)}</div>` +
+    (HANJA[jp] ? `<div class="ex" style="margin-top:10px">💡 같은 한자어라 소리가 닮았어요 · 同じ漢字語で音が似ています<br><b>${jp.replace("する","")}</b> = ${HANJA[jp]} ≈ ${yomi.replace("する","")}${say(HANJA[jp], "ko")}</div>` : "");
+  $("gScore").textContent = G.mode === "duel" ? `🇰🇷 ${G.score.ko} : ${G.score.ja} 🇯🇵` : `점수 · 得点 ${G.score[side]}`;
+  $("gNext").hidden = false;
+  $("gNext").focus();
+}
+function endGame() {
+  clearInterval(G.timer);
+  const b = getBest(), s = G.score;
+  ["ko", "ja"].forEach(k => { if (s[k] > (b[k] || 0)) b[k] = s[k]; });
+  try { localStorage.setItem(BEST, JSON.stringify(b)); } catch {}
+  $("gResult").innerHTML = G.mode === "duel"
+    ? `<div style="font-size:2rem">${s.ko === s.ja ? "🤝 무승부 · 引き分け" : s.ko > s.ja ? "🇰🇷 한국인 승리!<br>韓国人の勝ち！" : "🇯🇵 日本人の勝ち！<br>일본인 승리!"}</div><div class="back">🇰🇷 ${s.ko} : ${s.ja} 🇯🇵</div>`
+    : `<div style="font-size:2rem">🏁 ${s[G.mode]}점 · 点</div><div class="back">최고 점수 · ベスト ${b[G.mode]}</div>`;
+  view("gEnd");
+}
+$("gNext").onclick = () => { G.n++; G.n < G.qs.length ? ask() : endGame(); };
+$("gQuit").onclick = () => { clearInterval(G.timer); showBest(); view("gSetup"); };
+$("gAgain").onclick = () => startGame(G.mode);
+$("gMenu").onclick = () => { showBest(); view("gSetup"); };
+document.querySelectorAll(".modes button").forEach(b => b.onclick = () => startGame(b.dataset.mode));
+showBest();
 
 renderList();
 renderCard();
