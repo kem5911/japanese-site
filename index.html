@@ -44,6 +44,9 @@
   .timer { height:6px; background:var(--line); border-radius:3px; overflow:hidden; margin-bottom:10px; }
   .timer div { height:100%; background:var(--accent); width:100%; }
   nav { overflow-x:auto; }
+  .choices.emoji button { font-size:2.6rem; min-height:90px; }
+  .big { font-size:2.6rem; font-weight:700; }
+  .hint { margin-top:14px; font-size:1.3rem; color:var(--accent); min-height:1.6em; }
   .join { display:flex; gap:8px; margin-top:8px; }
   .join input { flex:1; min-width:0; padding:10px; font-size:1.1rem; border:1px solid var(--line); border-radius:8px; background:var(--card); color:var(--text); }
   .join button, .emotes button { padding:10px 14px; border:1px solid var(--line); background:var(--card); color:var(--text); border-radius:8px; cursor:pointer; font:inherit; }
@@ -89,6 +92,13 @@
 
   <section id="game" hidden>
     <div id="gSetup">
+      <h2>🎯 친구랑 내기 · 友達と勝負</h2>
+      <p class="ex">일본어를 하나도 몰라도 OK! 소리를 듣고 그림을 골라요. 기록을 친구에게 보내 내기해 보세요.<br>韓国語をまったく知らなくてもOK！音を聞いて絵を選ぼう。記録を友達に送って勝負！</p>
+      <div id="cInvite" class="ostatus" hidden></div>
+      <div class="modes">
+        <button data-ch="ko"><b>🇰🇷 일본어 소리 맞히기</b><span>몰라도 맞히는 일본어 10문제</span></button>
+        <button data-ch="ja"><b>🇯🇵 韓国語の音あてクイズ</b><span>知らなくても分かる韓国語10問</span></button>
+      </div>
       <h2>🇰🇷 한·일 단어 대결 🇯🇵 日韓単語バトル</h2>
       <p class="ex">10초 안에 뜻을 골라요. 빨리 맞힐수록 점수가 높아요.<br>10秒以内に意味を選んでください。早く当てるほど高得点！</p>
       <div class="modes">
@@ -114,6 +124,17 @@
       <p id="oOpp" class="ostatus" hidden></p>
       <div class="emotes" id="oEmotes" hidden></div>
       <div class="controls"><button id="gNext" hidden>다음 ▶ 次へ</button><button id="gQuit">그만하기 · やめる</button></div>
+    </div>
+    <div id="cPlay" hidden>
+      <div class="bar"><span id="cPos"></span><span id="cClock">0.0초</span></div>
+      <div class="flash q" id="cQ"></div>
+      <div class="choices emoji" id="cChoices"></div>
+    </div>
+    <div id="cEnd" hidden>
+      <div class="flash" id="cResult"></div>
+      <div class="controls"><button id="cShare">📨 친구에게 도전장 · 友達に挑戦状</button><button id="cAgain">🔁 다시 · もう一度</button><button id="cMenu">메뉴 · メニュー</button></div>
+      <h2 id="cLearnedT"></h2>
+      <div id="cLearned"></div>
     </div>
     <div id="gEnd" hidden>
       <div class="flash" id="gResult"></div>
@@ -316,7 +337,7 @@ const BEST = "jp-game-best";
 const getBest = () => { try { return JSON.parse(localStorage.getItem(BEST)) || {}; } catch { return {}; } };
 const showBest = () => { const b = getBest(); $("gBest").textContent = `최고 점수 · ベスト: 🇰🇷 ${b.ko || 0} / 🇯🇵 ${b.ja || 0}`; };
 const pick = (arr, k) => [...arr].sort(() => Math.random() - 0.5).slice(0, k);
-const view = v => ["gSetup", "gPlay", "gEnd"].forEach(id => $(id).hidden = id !== v);
+const view = v => ["gSetup", "gPlay", "gEnd", "cPlay", "cEnd"].forEach(id => $(id).hidden = id !== v);
 
 const makeQs = () => pick(W.map((_, i) => i), PER).map(w => ({ w, opts: pick([w, ...pick(W.map((_, i) => i).filter(i => i !== w), 3)], 4) }));
 function startGame(mode, qs = makeQs()) {
@@ -486,6 +507,97 @@ async function join() {
 document.querySelectorAll("[data-host]").forEach(b => b.onclick = () => host(b.dataset.host));
 $("oJoin").onclick = join;
 // 초대 링크 (?room=1234) 로 들어오면 바로 게임 탭 + 코드 입력
+// 친구랑 내기: 언어를 전혀 몰라도 소리로 맞힐 수 있는 단어 (외래어 + 같은 한자어)
+// [그림, 일본어, 일본어 읽기(한글), 한국어, 한국어 읽기(가나), 한자]
+const EZ = [
+  ["☕","コーヒー","코-히-","커피","コピ"], ["🍰","ケーキ","케-키","케이크","ケイク"], ["🍕","ピザ","피자","피자","ピジャ"],
+  ["🍔","ハンバーガー","함바-가-","햄버거","ヘムボゴ"], ["🍌","バナナ","바나나","바나나","バナナ"], ["🍫","チョコレート","초코레-토","초콜릿","チョコルリッ"],
+  ["🍦","アイスクリーム","아이스쿠리-무","아이스크림","アイスクリム"], ["🧃","ジュース","쥬-스","주스","ジュス"], ["📺","テレビ","테레비","텔레비전","テルレビジョン"],
+  ["🚌","バス","바스","버스","ボス"], ["🚕","タクシー","타쿠시-","택시","テクシ"], ["🏨","ホテル","호테루","호텔","ホテル"],
+  ["🎸","ギター","기타-","기타","ギタ"], ["🎹","ピアノ","피아노","피아노","ピアノ"], ["📷","カメラ","카메라","카메라","カメラ"],
+  ["🍅","トマト","토마토","토마토","トマト"], ["🍋","レモン","레몬","레몬","レモン"], ["🥗","サラダ","사라다","샐러드","セルロドゥ"],
+  ["🎮","ゲーム","게-무","게임","ゲイム"], ["🐧","ペンギン","펭긴","펭귄","ペングィン"], ["🍷","ワイン","와인","와인","ワイン"],
+  ["🥤","コーラ","코-라","콜라","コルラ"], ["🛋️","かぐ","카구","가구","カグ","家具"], ["🆓","むりょう","무료-","무료","ムリョ","無料"],
+  ["🍳","りょうり","료-리","요리","ヨリ","料理"], ["🌡️","おんど","온도","온도","オンド","温度"], ["🛣️","どうろ","도-로","도로","トロ","道路"],
+  ["👜","かばん","카방","가방","カバン","鞄"],
+];
+const CN = 10, HINT_MS = 3000;
+// 같은 링크를 받은 친구가 똑같은 문제를 풀도록 시드 고정 난수
+const rng = seed => () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+const shuf = (arr, r) => { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const C = { lang: "ko", seed: 0, qs: [], n: 0, right: 0, t0: 0, clock: null, hint: null, rival: null, log: [] };
+function chStart(lang, seed = Math.floor(Math.random() * 1e9), rival = null) {
+  const r = rng(seed), idx = EZ.map((_, i) => i);
+  Object.assign(C, { lang, seed, rival, n: 0, right: 0, log: [],
+    qs: shuf(idx, r).slice(0, CN).map(w => ({ w, opts: shuf([w, ...shuf(idx.filter(i => i !== w), r).slice(0, 3)], r) })) });
+  C.t0 = performance.now();
+  clearInterval(C.clock);
+  C.clock = setInterval(() => $("cClock").textContent = ((performance.now() - C.t0) / 1000).toFixed(1) + (lang === "ko" ? "초" : "秒"), 100);
+  view("cPlay"); chAsk();
+}
+function chAsk() {
+  const { w, opts } = C.qs[C.n], e = EZ[w], ko = C.lang === "ko";
+  const word = ko ? e[1] : e[3], read = ko ? e[2] : e[4], tl = ko ? "ja" : "ko";
+  $("cPos").textContent = `${C.n + 1} / ${CN}` + (C.rival ? ` · ${ko ? "친구 기록" : "友達の記録"} ${C.rival.right}/${CN}, ${C.rival.sec}${ko ? "초" : "秒"}` : "");
+  $("cQ").innerHTML = `<div class="big">${word}${say(word, tl)}</div><div class="ex" style="margin-top:8px">${ko ? "🔊 소리를 듣고 무엇인지 골라 보세요" : "🔊 音を聞いて何か選んでください"}</div><div class="hint" id="cHint"></div>`;
+  $("cChoices").innerHTML = opts.map(o => `<button data-o="${o}" aria-label="${ko ? EZ[o][3] : EZ[o][1]}">${EZ[o][0]}</button>`).join("");
+  if ("speechSynthesis" in window) speak(word, tl);
+  // 3초가 지나면 읽는 법 힌트 (모국어 글자로)
+  clearTimeout(C.hint);
+  C.hint = setTimeout(() => $("cHint").textContent = "💡 " + read, HINT_MS);
+}
+$("cChoices").onclick = ev => {
+  const b = ev.target.closest("button"); if (!b || b.disabled) return;
+  clearTimeout(C.hint);
+  const { w } = C.qs[C.n], e = EZ[w], ok = +b.dataset.o === w, ko = C.lang === "ko";
+  if (ok) C.right++;
+  C.log.push({ w, ok });
+  $("cChoices").querySelectorAll("button").forEach(x => { x.disabled = true; if (+x.dataset.o === w) x.classList.add("ok"); });
+  if (!ok) b.classList.add("ng");
+  $("cHint").innerHTML = `${ok ? "⭕" : "❌"} ${e[0]} ${e[1]}${e[5] ? ` (${e[5]})` : ""} = ${e[3]}`;
+  setTimeout(() => { C.n++; C.n < CN ? chAsk() : chEnd(); }, ok ? 700 : 1400);
+};
+function chEnd() {
+  clearInterval(C.clock); clearTimeout(C.hint);
+  const sec = ((performance.now() - C.t0) / 1000).toFixed(1), ko = C.lang === "ko";
+  C.sec = sec;
+  let vs = "";
+  if (C.rival) {
+    const win = C.right > C.rival.right || (C.right === C.rival.right && +sec < +C.rival.sec);
+    const tie = C.right === C.rival.right && sec === C.rival.sec;
+    vs = `<div style="font-size:1.5rem;margin-top:8px">${tie ? (ko ? "🤝 무승부!" : "🤝 引き分け！") : win ? (ko ? "🏆 친구를 이겼어요!" : "🏆 友達に勝った！") : (ko ? "😭 졌어요… 다시 도전!" : "😭 負けた…もう一回！")}</div>
+      <div class="ex">${ko ? "친구" : "友達"} ${C.rival.right}/${CN} · ${C.rival.sec}${ko ? "초" : "秒"}</div>`;
+  }
+  $("cResult").innerHTML = `<div style="font-size:2.4rem">${C.right}/${CN}</div><div>⏱ ${sec}${ko ? "초" : "秒"}</div>${vs}
+    <div class="ex" style="margin-top:10px">${ko ? `방금 일본어 단어 ${CN}개를 들었어요!` : `いま韓国語の単語を${CN}個聞きました！`}</div>`;
+  $("cLearnedT").textContent = ko ? "📒 오늘 만난 일본어" : "📒 今日出会った韓国語";
+  $("cLearned").innerHTML = C.log.map(({ w, ok }) => { const e = EZ[w], t = ko ? e[1] : e[3];
+    return `<div class="phrase">${ok ? "⭕" : "❌"} ${e[0]} <b>${t}</b>${say(t, ko ? "ja" : "ko")} <span class="ko">${ko ? e[2] : e[4]}${e[5] ? " · " + e[5] : ""} = ${ko ? e[3] : e[1]}</span></div>`; }).join("");
+  view("cEnd");
+}
+$("cShare").onclick = async () => {
+  const ko = C.lang === "ko";
+  const url = `${location.origin}${location.pathname}?ch=${C.lang}.${C.seed}.${C.right}.${C.sec}`;
+  const text = ko ? `일본어 하나도 몰라도 맞힐 수 있대! 나는 ${C.right}/${CN}, ${C.sec}초 🎯 너는 이길 수 있어? ${url}`
+                  : `韓国語まったく知らなくても分かるらしい！私は${C.right}/${CN}、${C.sec}秒 🎯 勝てる？ ${url}`;
+  try { if (navigator.share) return await navigator.share({ text }); await navigator.clipboard.writeText(text); bubble(ko ? "도전장 복사됨! 친구에게 붙여넣기 하세요" : "コピーしました！友達に送ってね"); }
+  catch { prompt(ko ? "도전장 링크" : "挑戦状リンク", text); }
+};
+$("cAgain").onclick = () => chStart(C.lang);
+$("cMenu").onclick = () => { clearInterval(C.clock); view("gSetup"); };
+document.querySelectorAll("[data-ch]").forEach(b => b.onclick = () => chStart(b.dataset.ch));
+// 도전장 링크 (?ch=언어.시드.맞힌수.초) 로 들어오면 같은 문제로 바로 도전
+const ch = new URLSearchParams(location.search).get("ch");
+if (ch) {
+  const [lang, seed, right, sec] = ch.split(".").length === 5 ? (([a, b, c, d, e]) => [a, b, c, d + "." + e])(ch.split(".")) : ch.split(".");
+  if ((lang === "ko" || lang === "ja") && /^\d+$/.test(seed) && /^\d+$/.test(right) && /^[\d.]+$/.test(sec)) {
+    document.querySelector('[data-tab=game]').click();
+    const ko = lang === "ko";
+    $("cInvite").hidden = false;
+    $("cInvite").innerHTML = `${ko ? `📨 친구가 도전장을 보냈어요! 기록 ${right}/${CN}, ${sec}초` : `📨 友達から挑戦状！記録 ${right}/${CN}、${sec}秒`}<br><button id="cAccept">${ko ? "도전하기 🔥" : "挑戦する 🔥"}</button>`;
+    $("cAccept").onclick = () => chStart(lang, +seed, { right: +right, sec });
+  }
+}
 const room = new URLSearchParams(location.search).get("room");
 if (room) { $("oCode").value = room; document.querySelector('[data-tab=game]').click(); }
 document.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => startGame(b.dataset.mode));
