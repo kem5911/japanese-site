@@ -361,6 +361,15 @@
   #bbsMore { display:block; width:100%; min-height:44px; border:2px solid var(--line); background:var(--card); color:var(--text); border-radius:10px; cursor:pointer; }
   .bbs-admin { margin:0 0 10px; padding:8px 10px; border-radius:8px; background:var(--navy); color:#fff; font-size:.82rem; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
   .bbs-admin button { min-height:34px; border:0; border-radius:6px; padding:4px 10px; background:#fff; color:var(--navy); font-weight:700; cursor:pointer; }
+  /* 단어장 고르기 (레벨 → Day) */
+  .dpick { margin:0 0 12px; }
+  .dpick-row { display:flex; gap:6px; overflow-x:auto; padding:2px 2px 6px; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+  .dpick-row::-webkit-scrollbar { display:none; }
+  .dpick-row button { flex:none; min-height:40px; padding:6px 12px; border:2px solid var(--line); background:var(--card); color:var(--text); border-radius:20px; font:inherit; font-weight:800; font-size:.9rem; cursor:pointer; white-space:nowrap; }
+  .dpick-row button[aria-pressed="true"] { background:var(--navy, var(--accent)); border-color:var(--navy, var(--accent)); color:#fff; }
+  .dpick-row.days button { display:flex; flex-direction:column; align-items:center; line-height:1.15; border-radius:10px; min-width:64px; }
+  .dpick-row.days small { font-weight:700; font-size:.72rem; opacity:.8; }
+  .say.nat { position:relative; }
 </style>
 </head>
 <body>
@@ -402,11 +411,14 @@
     <div class="today" id="today"></div>
   </section>
   <section id="list" hidden>
+    <div class="dpick" role="group" aria-label="단어장 고르기"></div>
     <div class="bar"><span id="count"></span><label><input type="checkbox" id="hideDone"> 외운 단어 숨기기</label></div>
     <div id="words"></div>
+    <p class="lis-credit" id="wordCredit"></p>
   </section>
 
   <section id="flash" hidden>
+    <div class="dpick" role="group" aria-label="단어장 고르기"></div>
     <div class="bar"><span id="pos"></span><label><input type="checkbox" id="skipDone"> 외운 단어 제외</label></div>
     <div class="flash" id="card" role="button" tabindex="0" aria-live="polite"></div>
     <div class="controls">
@@ -546,6 +558,7 @@
 </main>
 <div id="toast" role="status" aria-live="polite"></div>
 
+<script src="words.js"></script>
 <script>
 // ── 언어 ── "ko": 한국인이 일본어를 배우는 화면 / "ja": 日本人が韓国語を学ぶ画面
 // 처음 열면 고르게 하고(폰 언어로 미리 추천), 고른 값은 이 기기에 기억해 둠.
@@ -584,8 +597,31 @@ const kata = (() => {
   const cols = s => s.includes(",") ? s.split(",") : [...s];
   const VW = [[0],[3],[0,"y"],[3,"y"],[4],[3],[4,"y"],[3,"y"],[4],[0,"w"],[3,"w"],[3,"w"],[4,"y"],[2],[4,"w"],[3,"w"],[1,"w"],[2,"y"],[2],[1,"w"],[1]];
   const SMALL = { y:["ャ","","ュ","ェ","ョ"], w:["ァ","ィ","","ェ","ォ"] };
-  const FIN = {1:"ク",2:"ク",4:"ン",7:"ッ",8:"ル",16:"ム",17:"プ",19:"ッ",20:"ッ",21:"ン",22:"ッ",23:"ッ",24:"ク",25:"ッ",26:"プ",27:"ッ"};
+  const FIN = {1:"ク",2:"ク",3:"ク",4:"ン",5:"ン",6:"ン",7:"ッ",8:"ル",9:"ク",10:"ム",11:"ル",12:"ル",13:"ル",14:"プ",15:"ル",16:"ム",17:"プ",18:"プ",19:"ッ",20:"ッ",21:"ン",22:"ッ",23:"ッ",24:"ク",25:"ッ",26:"プ",27:"ッ"};
+  // 받침 뒤에 ㅇ으로 시작하는 글자가 오면 받침 소리를 넘겨 읽기 (연음: 많이→마니, 음악→으막, 같이→가치)
+  const LIA = {1:[0,0],2:[0,1],3:[1,10],4:[0,2],5:[4,12],6:[0,2],7:[0,3],8:[0,5],9:[8,0],10:[8,6],11:[8,7],12:[8,9],13:[8,16],14:[8,17],15:[0,5],16:[0,6],17:[0,7],18:[17,10],19:[0,9],20:[0,10],22:[0,12],23:[0,14],24:[0,15],25:[0,16],26:[0,17],27:[0,11]};
+  const liaison = w => {
+    const cs = [...w];
+    for (let k = 0; k < cs.length - 1; k++) {
+      const n = cs[k].charCodeAt(0) - 44032, m = cs[k + 1].charCodeAt(0) - 44032;
+      if (n < 0 || n > 11171 || m < 0 || m > 11171) continue;
+      const mi = Math.floor(m / 588);
+      if (mi === 2 || mi === 6) { // 비음화: 합니다→함니다, 한국말→한궁말, 있는→인는
+        const c0 = n % 28, to = [17, 26, 18].includes(c0) ? 16 : [1, 2, 24, 9].includes(c0) ? 21 : [7, 19, 20, 22, 23, 25, 27].includes(c0) ? 4 : 0;
+        if (to) cs[k] = String.fromCharCode(44032 + n - c0 + to);
+        continue;
+      }
+      if (mi !== 11) continue;
+      const c = n % 28, mv = LIA[c]; if (!mv) continue;
+      let [keep, ini] = mv; const vb = Math.floor(m % 588 / 28);
+      if (vb === 20 && (c === 7 || c === 25)) ini = c === 7 ? 12 : 14; // 굳이→구지, 같이→가치
+      cs[k] = String.fromCharCode(44032 + n - c + keep);
+      cs[k + 1] = String.fromCharCode(44032 + ini * 588 + m % 588);
+    }
+    return cs.join("");
+  };
   return word => {
+    word = liaison(word);
     let out = "", prevFin = -1;
     for (const ch of word) {
       const n = ch.charCodeAt(0) - 44032;
@@ -1241,7 +1277,7 @@ const KEY = "jp-done";
 let done;
 try { done = new Set(JSON.parse(localStorage.getItem(KEY)) || []); } catch { done = new Set(); }
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify([...done])); } catch {} };
-const toggle = w => { const add = !done.has(w); add ? done.add(w) : done.delete(w); save(); renderList(); renderCard(); if (window.Rec) Rec.words(done.size, add); };
+const toggle = w => { const add = !done.has(w); add ? done.add(w) : done.delete(w); save(); renderList(); renderCard(); if (typeof renderPick === "function") renderPick(); if (window.Rec) Rec.words(done.size, add); };
 const $ = id => document.getElementById(id);
 // 일본인용: 단어의 대표 한국어와 가타카나 읽기
 const krOf = w => { try { if (KR[w[0]]) return KR[w[0]]; } catch {} const k = w[2].split(",")[0].trim(); return [k, kata(k)]; };
@@ -1270,51 +1306,128 @@ document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
   document.querySelectorAll("main section").forEach(s => s.hidden = s.id !== b.dataset.tab);
 });
 
+// ── 단어장 고르기: 기본 50 / JLPT N5~N1 / TOPIK 1~6급 → Day1~5 (Day당 50개) ──
+// 한국어 화면은 일본어(JLPT), 日本語画面は韓国語(TOPIK)를 배움
+const VSIDE = JA ? "ko" : "ja";
+const VLV = window.VOCAB ? VOCAB[VSIDE] : {};
+const LVLS = Object.keys(VLV);
+const PER_DAY = 50, DAYS = 5;
+const DK_KEY = "kj-deck-" + LANG;
+let deckSel; try { deckSel = JSON.parse(localStorage.getItem(DK_KEY)); } catch {}
+if (!deckSel || (deckSel.lv !== "basic" && !LVLS.includes(deckSel.lv))) deckSel = { lv: "basic", day: 1 };
+const lvName = lv => lv === "basic" ? tr("⭐ 기본", "⭐ 基本") : JA ? `TOPIK ${lv}級` : `JLPT ${lv}`;
+const deckName = () => deckSel.lv === "basic" ? tr("기본 50", "基本 50") : `${lvName(deckSel.lv)} · Day ${deckSel.day}`;
+// 원어민 녹음 (Lingua Libre / Wikimedia Commons). 기계 음성 아님.
+const auUrl = (code, word) => {
+  const s = window.VOCAB_SPK && VOCAB_SPK[VSIDE][code]; if (!s) return null;
+  const q = VSIDE === "ja" ? "Q5287_(jpn)" : "Q9176_(kor)";
+  return "https://commons.wikimedia.org/wiki/Special:FilePath/" + encodeURIComponent(`LL-${q}-${s[0]}-${word}.wav`.replace(/ /g, "_"));
+};
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+// 레벨 단어 → 화면용 모양 {key, head, read, mean, ex, note, au, tts}
+function levelItems(lv) {
+  const L = VLV[lv]; if (!L) return [];
+  return L.W.map((s, n) => {
+    const p = s.split("|"), au = L.A[n] !== "-" ? auUrl(L.A[n], p[0]) : null;
+    return VSIDE === "ja"
+      ? { key: p[0], head: p[0], read: p[1] !== p[0] ? p[1] : "", mean: p[2], au }
+      : { key: "k:" + p[0], head: p[0], read: kata(p[0]), mean: p[1], au };
+  });
+}
+const basicItems = () => W.map(w => {
+  if (!JA) return { key: w[0], head: w[0], read: w[1], mean: w[2], ex: w[3], tts: w[0] };
+  const [k, kt] = krOf(w);
+  return { key: w[0], head: k, read: kt, mean: `${w[0]}（${w[1]}）`, tts: k };
+});
+const curItems = () => deckSel.lv === "basic" ? basicItems() : levelItems(deckSel.lv).slice((deckSel.day - 1) * PER_DAY, deckSel.day * PER_DAY);
+let items = curItems();
+const doneIn = list => list.filter(x => done.has(x.key)).length;
+
+// 소리 버튼: 원어민 녹음이 있으면 그걸, 없으면 (기본 단어장만) 예전 읽기
+let auEl;
+const sayBtn = it => it.au
+  ? `<button class="say nat" data-au="${esc(it.au)}" aria-label="${tr("원어민 발음 듣기", "ネイティブの発音を聞く")}">🔊</button>`
+  : it.tts ? say(it.tts, JA ? "ko" : "ja") : "";
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-au]");
+  if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  try { if (!auEl) auEl = new Audio(); auEl.pause(); auEl.src = b.dataset.au; auEl.play().catch(() => { const t = $("toast"); t.textContent = tr("소리를 불러오지 못했어요", "音声を読み込めませんでした"); t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2200); }); } catch {}
+}, true);
+
+function pickHtml() {
+  const lvBtns = ["basic", ...LVLS].map(lv => `<button data-lv="${lv}" aria-pressed="${deckSel.lv === lv}">${lvName(lv)}</button>`).join("");
+  let days = "";
+  if (deckSel.lv !== "basic") {
+    const all = levelItems(deckSel.lv);
+    days = `<div class="dpick-row days">` + Array.from({ length: DAYS }, (_, d) => {
+      const part = all.slice(d * PER_DAY, (d + 1) * PER_DAY), n = doneIn(part);
+      return `<button data-day="${d + 1}" aria-pressed="${deckSel.day === d + 1}"><b>Day ${d + 1}</b><small>${n === part.length ? "✅" : `${n}/${part.length}`}</small></button>`;
+    }).join("") + `</div>`;
+  }
+  return `<div class="dpick-row">${lvBtns}</div>${days}`;
+}
+function renderPick() {
+  document.querySelectorAll(".dpick").forEach(el => el.innerHTML = pickHtml());
+}
+document.addEventListener("click", e => {
+  const lv = e.target.closest(".dpick [data-lv]"), dy = e.target.closest(".dpick [data-day]");
+  if (!lv && !dy) return;
+  if (lv) deckSel = { lv: lv.dataset.lv, day: lv.dataset.lv === deckSel.lv ? deckSel.day : 1 };
+  if (dy) deckSel = { lv: deckSel.lv, day: +dy.dataset.day };
+  try { localStorage.setItem(DK_KEY, JSON.stringify(deckSel)); } catch {}
+  items = curItems(); order = items.map((_, n) => n); i = 0; flipped = false;
+  renderPick(); renderList(); renderCard();
+});
+
 // 단어장
 function renderList() {
-  $("count").textContent = tr(`외운 단어 ${done.size} / ${W.length}`, `覚えた単語 ${done.size} / ${W.length}`);
+  const n = doneIn(items);
+  $("count").textContent = tr(`${deckName()} · 외운 단어 ${n} / ${items.length}`, `${deckName()} · 覚えた単語 ${n} / ${items.length}`);
   $("words").innerHTML = "";
-  W.filter(w => !($("hideDone").checked && done.has(w[0]))).forEach(([jp, yomi, ko, ex]) => {
+  items.filter(it => !($("hideDone").checked && done.has(it.key))).forEach(it => {
     const el = document.createElement("label");
-    el.className = "word" + (done.has(jp) ? " done" : "");
-    const [k, kt] = krOf([jp, yomi, ko]);
-    el.innerHTML = `<input type="checkbox" ${done.has(jp) ? "checked" : ""}>` + (JA
-      ? `<div><span class="jp kr" lang="ko">${k}</span>${say(k, "ko")}<span class="kt">${kt}</span><div class="ex">${jp}（${yomi}）</div></div>`
-      : `<div><span class="jp">${jp}</span>${say(jp)}<span class="yomi">${yomi}</span> — ${ko}<div class="ex">${ex}${say(ex)}</div></div>`);
-    el.querySelector("input").onchange = () => toggle(jp);
+    el.className = "word" + (done.has(it.key) ? " done" : "");
+    el.innerHTML = `<input type="checkbox" ${done.has(it.key) ? "checked" : ""}>` + (JA
+      ? `<div><span class="jp kr" lang="ko">${esc(it.head)}</span>${sayBtn(it)}<span class="kt">${esc(it.read)}</span><div class="ex">${esc(it.mean)}</div></div>`
+      : `<div><span class="jp" lang="ja">${esc(it.head)}</span>${sayBtn(it)}${it.read ? `<span class="yomi" lang="ja">${esc(it.read)}</span>` : ""} — ${esc(it.mean)}${it.ex ? `<div class="ex">${it.ex}${say(it.ex)}</div>` : ""}</div>`);
+    el.querySelector("input").onchange = () => toggle(it.key);
     $("words").append(el);
   });
 }
 $("hideDone").onchange = renderList;
 
 // 플래시카드
-let order = W.map((_, i) => i), i = 0, flipped = false;
-const deck = () => order.filter(n => !($("skipDone").checked && done.has(W[n][0])));
+let order = items.map((_, n) => n), i = 0, flipped = false;
+const deck = () => order.filter(n => items[n] && !($("skipDone").checked && done.has(items[n].key)));
 function renderCard() {
   const d = deck();
-  if (!d.length) { $("card").innerHTML = tr("🎉 모든 단어를 외웠어요!", "🎉 全部覚えました！"); $("pos").textContent = "0 / 0"; $("mark").hidden = true; return; }
+  if (!d.length) { $("card").innerHTML = tr("🎉 모든 단어를 외웠어요!", "🎉 全部覚えました！"); $("pos").textContent = `${deckName()} · 0 / 0`; $("mark").hidden = true; return; }
   i = (i + d.length) % d.length;
-  const [jp, yomi, ko, ex] = W[d[i]];
-  $("pos").textContent = `${i + 1} / ${d.length}`;
-  const [k, kt] = krOf(W[d[i]]);
+  const it = items[d[i]];
+  $("pos").textContent = `${deckName()} · ${i + 1} / ${d.length}`;
   $("card").innerHTML = JA
-    ? `<div class="jp kr" lang="ko">${k}${say(k, "ko")}</div>` + (flipped
-      ? `<div class="back"><b>${kt}</b><br>${jp}（${yomi}）</div>`
+    ? `<div class="jp kr" lang="ko">${esc(it.head)}${sayBtn(it)}</div>` + (flipped
+      ? `<div class="back"><b>${esc(it.read)}</b><br>${esc(it.mean)}</div>`
       : `<div class="ex" style="margin-top:16px">タップで意味を見る</div>`)
-    : `<div class="jp">${jp}${say(jp)}</div>` + (flipped
-      ? `<div class="back"><b>${yomi}</b><br>${ko}<br><span class="ex">${ex}</span>${say(ex)}</div>`
+    : `<div class="jp" lang="ja">${esc(it.head)}${sayBtn(it)}</div>` + (flipped
+      ? `<div class="back">${it.read ? `<b lang="ja">${esc(it.read)}</b><br>` : ""}${esc(it.mean)}${it.ex ? `<br><span class="ex">${it.ex}</span>${say(it.ex)}` : ""}</div>`
       : `<div class="ex" style="margin-top:16px">눌러서 뜻 보기</div>`);
   $("mark").hidden = false;
-  $("mark").textContent = done.has(jp) ? tr("✅ 외움 (취소)", "✅ 覚えた（取り消す）") : tr("☐ 외웠어요", "☐ 覚えた");
+  $("mark").textContent = done.has(it.key) ? tr("✅ 외움 (취소)", "✅ 覚えた（取り消す）") : tr("☐ 외웠어요", "☐ 覚えた");
 }
 const go = step => { i += step; flipped = false; renderCard(); };
 $("card").onclick = () => { flipped = !flipped; renderCard(); if (flipped && window.Rec) Rec.card(); };
 $("card").onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("card").click(); } };
 $("prev").onclick = () => go(-1);
 $("next").onclick = () => go(1);
-$("mark").onclick = () => { const d = deck(); toggle(W[d[i]][0]); };
+$("mark").onclick = () => { const d = deck(); toggle(items[d[i]].key); };
 $("shuffle").onclick = () => { order.sort(() => Math.random() - 0.5); i = 0; flipped = false; renderCard(); };
 $("skipDone").onchange = () => { i = 0; flipped = false; renderCard(); };
+renderPick();
+$("wordCredit").textContent = tr(
+  "🔊 단어 발음은 원어민 녹음이에요 (기계 음성 아님). 녹음: Lingua Libre · Wikimedia Commons 기여자 Fukujinzuke (CC BY 4.0), I JethroBT·Zsrtrgh (CC BY-SA 4.0), CKali·葵心·Higa4 외 (CC0). 녹음이 아직 없는 단어는 🔊 버튼이 없어요.",
+  "🔊 単語の発音はネイティブの録音です（機械音声ではありません）。録音: Lingua Libre · Wikimedia Commons の 호로조・CHK2605 ほか (CC0)、HappyMidnight・Gaillon27 (CC BY-SA 4.0)。録音がまだない単語には🔊ボタンがありません。");
 
 // 회화
 const T_JA = { "🏪 편의점":"🏪 コンビニ", "🍜 식당":"🍜 食堂", "🚉 역":"🚉 駅", "💼 아르바이트 면접":"💼 バイトの面接" };
@@ -2108,7 +2221,7 @@ function renderHome() {
     $("contS").textContent = last === "flash" ? tr(`카드 ${i + 1}번째부터 · 외운 단어 ${done.size}개`, `カード ${i + 1}枚目から · 覚えた単語 ${done.size}`) : tr(`${TAB_NAME[last]} 하던 곳으로 가요`, `${TAB_NAME[last]}の続きへ`);
   }
   $("cont").onclick = () => goTab(last && TAB_NAME[last] ? last : "list");
-  $("tileList").textContent = tr(`${W.length}개 중 ${done.size}개 외움`, `${W.length}語中 ${done.size}語 覚えた`);
+  $("tileList").textContent = tr(`${deckName()} · ${doneIn(items)}/${items.length} 외움`, `${deckName()} · ${doneIn(items)}/${items.length} 覚えた`);
   const d = new Date(), w = W[(d.getFullYear() * 372 + d.getMonth() * 31 + d.getDate()) % W.length];
   $("today").innerHTML = `<div><div class="jp" lang="ja">${w[0]}</div><span class="rd" lang="ja">${w[1]}</span><div style="margin-top:6px">${w[2]}</div></div>
     <button class="say" data-say="${w[1]}" aria-label="읽기: ${w[1]}">🔊</button>`;
