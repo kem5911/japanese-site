@@ -4,7 +4,7 @@ name: Firebase 배포
 # 비밀키 없이 Google 워크로드 아이덴티티(OIDC)로 로그인
 on:
   push:
-    branches: [main]
+    branches: [main, claude/project-thread-8lygjx]
   workflow_dispatch:
 
 permissions:
