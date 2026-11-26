@@ -10,18 +10,42 @@
           "$uid": {
             ".write": "auth != null && auth.uid === $uid",
             ".validate": "newData.hasChildren(['a', 'b', 'k', 'c', 'l', 'x', 'y', 't'])",
-            "a": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 40" },
-            "b": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 40" },
-            "k": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 100" },
-            "c": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 12" },
-            "l": { ".validate": "newData.val() === 'ko' || newData.val() === 'ja'" },
-            "x": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 32" },
-            "y": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 24" },
-            "v": { ".validate": "newData.isBoolean()" },
-            "e": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 20" },
-            "et": { ".validate": "newData.isNumber()" },
-            "t": { ".validate": "newData.val() === now" },
-            "$other": { ".validate": false }
+            "a": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 40"
+            },
+            "b": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 40"
+            },
+            "k": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 100"
+            },
+            "c": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 12"
+            },
+            "l": {
+              ".validate": "newData.val() === 'ko' || newData.val() === 'ja'"
+            },
+            "x": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 32"
+            },
+            "y": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 24"
+            },
+            "v": {
+              ".validate": "newData.isBoolean()"
+            },
+            "e": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 20"
+            },
+            "et": {
+              ".validate": "newData.isNumber()"
+            },
+            "t": {
+              ".validate": "newData.val() === now"
+            },
+            "$other": {
+              ".validate": false
+            }
           }
         },
         "sig": {
@@ -31,10 +55,18 @@
             "$msg": {
               ".write": "auth != null && !data.exists() && newData.child('f').val() === auth.uid",
               ".validate": "newData.hasChildren(['f', 'k']) && newData.child('k').isString() && newData.child('k').val().length <= 10 && (!newData.child('d').exists() || (newData.child('d').isString() && newData.child('d').val().length <= 16000))",
-              "f": { ".validate": "newData.isString()" },
-              "k": { ".validate": true },
-              "d": { ".validate": true },
-              "$other": { ".validate": false }
+              "f": {
+                ".validate": "newData.isString()"
+              },
+              "k": {
+                ".validate": true
+              },
+              "d": {
+                ".validate": true
+              },
+              "$other": {
+                ".validate": false
+              }
             }
           }
         }
@@ -44,7 +76,33 @@
       "$id": {
         ".write": "auth != null && !data.exists()",
         ".validate": "newData.hasChildren(['by', 'who', 'why', 'ch', 't']) && newData.child('by').val() === auth.uid && newData.child('who').isString() && newData.child('who').val().length <= 128 && newData.child('why').isString() && newData.child('why').val().length <= 20 && newData.child('ch').isString() && newData.child('ch').val().length <= 4 && newData.child('t').val() === now",
-        "$f": { ".validate": "$f === 'by' || $f === 'who' || $f === 'why' || $f === 'ch' || $f === 't'" }
+        "$f": {
+          ".validate": "$f === 'by' || $f === 'who' || $f === 'why' || $f === 'ch' || $f === 't'"
+        }
+      }
+    },
+    "duel": {
+      "$code": {
+        ".validate": "$code.matches(/^[0-9]{4}$/)",
+        ".read": "auth != null",
+        ".write": "auth != null && data.child('h/u').val() === auth.uid",
+        "h": {
+          ".write": "auth != null && (!data.exists() || data.child('u').val() === auth.uid)",
+          ".validate": "newData.hasChildren(['u', 'l', 't']) && newData.child('u').val() === auth.uid && (newData.child('l').val() === 'ko' || newData.child('l').val() === 'ja') && newData.child('t').val() === now"
+        },
+        "g": {
+          ".write": "auth != null && root.child('duel/' + $code + '/h').exists() && (!data.exists() || data.child('u').val() === auth.uid)",
+          ".validate": "newData.hasChildren(['u', 't']) && newData.child('u').val() === auth.uid && newData.child('t').val() === now"
+        },
+        "m": {
+          "$id": {
+            ".write": "auth != null && !data.exists() && (root.child('duel/' + $code + '/h/u').val() === auth.uid || root.child('duel/' + $code + '/g/u').val() === auth.uid)",
+            ".validate": "newData.hasChildren(['f', 'd', 't']) && newData.child('f').val() === auth.uid && newData.child('d').isString() && newData.child('d').val().length <= 8000 && newData.child('t').val() === now"
+          }
+        },
+        "$other": {
+          ".validate": false
+        }
       }
     }
   }
