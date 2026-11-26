@@ -248,7 +248,12 @@ const solid = (x, y) => { const tx = Math.floor(x), ty = Math.floor(y); return t
 const ZONES = [
   { id: "ko", x: 7.5, y: 6.1, r: 1.6, col: "#1e78d2", icon: "🇰🇷", ko: "1번선 · 한국어 끝말잇기", ja: "1番線・韓国語しりとり", a: tr("끝말잇기 시작", "しりとり（韓国語）") },
   { id: "ja", x: 23.5, y: 6.1, r: 1.6, col: "#c8102e", icon: "🇯🇵", ko: "2번선 · 일본어 しりとり", ja: "2番線・日本語しりとり", a: tr("しりとり 시작", "しりとり開始") },
-  { id: "hunt", x: 15.5, y: 17.2, r: 1.5, col: "#ef8a00", icon: "🪧", ko: "광장 · 역명판 찾기", ja: "広場・駅名標さがし", a: tr("역명판 찾기 시작", "駅名標さがし開始") },
+  { id: "hunt", x: 15.5, y: 17.2, r: 1.5, col: "#ef8a00", icon: "🪧", ko: "광장 · 역명판 찾기", ja: "広場・駅名標さがし", a: tr("역명판 찾기 시작", "駅名標さがし開始"), lbl: ["역명판 찾기", "駅名標さがし"] },
+  // 원래 게임 탭에 있던 게임들 (index.html 에서 그 게임만 열림)
+  { id: "run", go: "run", x: 11, y: 10.3, r: 1.2, col: "#e5532d", icon: "🏃", a: tr("갈림길 러너", "分かれ道ランナー"), lbl: ["갈림길 러너", "分かれ道ランナー"] },
+  { id: "battle", go: "battle", x: 20, y: 10.3, r: 1.2, col: "#9b5bd1", icon: "⚔️", a: tr("한·일 단어 대결", "日韓単語バトル"), lbl: ["단어 대결", "単語バトル"] },
+  { id: "ch", go: "ch", x: 9, y: 14.7, r: 1.2, col: "#2fa84f", icon: "🎯", a: tr("친구랑 내기", "友達と勝負"), lbl: ["친구랑 내기", "友達と勝負"] },
+  { id: "online", go: "online", x: 22, y: 14.7, r: 1.2, col: "#1e78d2", icon: "🌏", a: tr("온라인 대결", "オンライン対戦"), lbl: ["온라인 대결", "オンライン対戦"] },
 ];
 // 역명판 (광장에 서 있는 표지판, 밟으면 고름)
 const SIGNS = [[2, 19], [7, 19], [12, 19], [18, 19], [23, 19], [28, 19], [4.5, 21.5], [15, 21.5], [25.5, 21.5]].map(([x, y], i) => ({ x, y, w: 2.2, city: CITY[i % CITY.length], item: null, flash: 0, ok: false, cool: 0 }));
@@ -336,6 +341,7 @@ function nearZone() {
 function act() {
   if (modal) return;
   if (!near) { hint(tr("색깔 동그라미로 가면 게임이 있어요", "色の丸に行くとゲームがあるよ")); return; }
+  if (near.go) { location.href = "index.html#play=" + near.go; return; }
   if (near.id === "hunt") startHunt(); else openChain(near.id);
 }
 
@@ -395,7 +401,8 @@ function drawZoneBoards() {
     ctx.globalAlpha = hunt.on && z.id === "hunt" ? 0.25 : 1;
     ctx.fillStyle = z.col + "33"; ctx.beginPath(); ctx.arc(z.x, z.y, z.r * (0.85 + pulse * 0.08), 0, 7); ctx.fill();
     ctx.strokeStyle = z.col; ctx.lineWidth = 0.08; ctx.setLineDash([0.25, 0.18]); ctx.beginPath(); ctx.arc(z.x, z.y, z.r * 0.85, 0, 7); ctx.stroke(); ctx.setLineDash([]);
-    ctx.font = font(0.7); ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(z.icon, z.x, z.y);
+    ctx.font = font(z.r < 1.4 ? 0.55 : 0.7); ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(z.icon, z.x, z.y);
+    if (z.lbl) { const t = JA ? z.lbl[1] : z.lbl[0]; ctx.font = font(0.28); const w = ctx.measureText(t).width + 0.3; ctx.fillStyle = z.col; rr(z.x - w / 2, z.y - z.r - 0.05, w, 0.42, 0.1); ctx.fill(); ctx.fillStyle = "#fff"; ctx.fillText(t, z.x, z.y - z.r + 0.16); }
     ctx.globalAlpha = 1;
   }
   // 승강장 위 역명판 (駅名標)
@@ -753,6 +760,7 @@ requestAnimationFrame(frame);
       <span>🇰🇷</span><span>${tr("1번선: 한국어 끝말잇기", "1番線：韓国語しりとり")}</span>
       <span>🇯🇵</span><span>${tr("2번선: 일본어 しりとり", "2番線：日本語しりとり")}</span>
       <span>🪧</span><span>${tr("광장: 뜻이 맞는 역명판으로 달리기", "広場：意味が合う駅名標へダッシュ")}</span>
+      <span>🎮</span><span>${tr("대합실: 러너·단어 대결·내기·온라인 대결", "コンコース：ランナー・単語バトル・勝負・オンライン対戦")}</span>
     </div>`, [[tr("출발!", "出発！"), closeAll]]);
 })();
 </script>
