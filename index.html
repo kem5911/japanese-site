@@ -57,6 +57,33 @@
   .pod-bar { width:100%; margin:12px 0 4px; }
   .pod-time { display:flex; justify-content:space-between; color:var(--muted); font-size:.85rem; font-variant-numeric:tabular-nums; }
   .pod-cap { min-height:3.2em; margin-top:10px; font-size:1.1rem; }
+  .rec-lang { float:right; padding:6px 10px; border:1px solid var(--line); background:var(--card); color:var(--text); border-radius:8px; cursor:pointer; font-size:.9rem; }
+  .rec-hero { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px 16px; text-align:center; }
+  .rec-hero .big { font-size:2.6rem; font-weight:700; color:var(--accent); line-height:1.1; }
+  .rec-hero .sub { color:var(--muted); margin-top:4px; }
+  .rec-today { margin-top:12px; padding:10px; border-radius:10px; background:var(--done); font-size:.95rem; }
+  .rec-today.todo { background:transparent; border:1px dashed var(--accent); }
+  .rec-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-top:10px; }
+  .rec-stat { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px; }
+  .rec-stat b { display:block; font-size:1.4rem; font-variant-numeric:tabular-nums; }
+  .rec-stat span { color:var(--muted); font-size:.85rem; }
+  .cal-head { display:flex; justify-content:space-between; align-items:center; margin:20px 0 6px; }
+  .cal-head button { border:1px solid var(--line); background:var(--card); color:var(--text); border-radius:8px; padding:4px 12px; cursor:pointer; }
+  .cal { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; text-align:center; }
+  .cal div { aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:8px; font-size:.8rem; color:var(--muted); }
+  .cal .dow { aspect-ratio:auto; padding:2px 0; }
+  .cal .d { background:var(--card); border:1px solid var(--line); }
+  .cal .d.on { background:var(--done); color:var(--text); }
+  .cal .d.on::after { content:"🌸"; font-size:1rem; line-height:1; }
+  .cal .d.today { border-color:var(--accent); border-width:2px; }
+  .badges { display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:8px; }
+  .badge { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 6px; text-align:center; font-size:.8rem; }
+  .badge .e { font-size:1.8rem; display:block; }
+  .badge.lock { opacity:.35; filter:grayscale(1); }
+  .badge small { display:block; color:var(--muted); margin-top:2px; }
+  .games-rec .phrase { display:flex; justify-content:space-between; }
+  #toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(160px); background:var(--text); color:var(--bg); padding:12px 18px; border-radius:12px; font-weight:600; transition:transform .3s; z-index:9; max-width:90vw; text-align:center; }
+  #toast.show { transform:translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
@@ -68,6 +95,7 @@
     <button role="tab" aria-selected="false" data-tab="flash">플래시카드</button>
     <button role="tab" aria-selected="false" data-tab="talk">실생활 회화</button>
     <button role="tab" aria-selected="false" data-tab="listen">🎧 듣기 모드</button>
+    <button role="tab" aria-selected="false" data-tab="rec">🏆 기록 · 記録</button>
   </nav>
 </header>
 <main>
@@ -138,7 +166,10 @@
       <div class="lis-credit">모든 에피소드는 각 팟캐스트의 공식 공개 피드에서 그대로 재생돼요. 저작권은 각 제작자에게 있어요. 대본·단어장은 제작자 페이지(🔗)에서 확인하고, 마음에 들면 제작자를 응원해 주세요.</div>
     </div>
   </section>
+
+  <section id="rec" hidden></section>
 </main>
+<div id="toast" role="status" aria-live="polite"></div>
 
 <script>
 const W = [
@@ -334,7 +365,7 @@ const KEY = "jp-done";
 let done;
 try { done = new Set(JSON.parse(localStorage.getItem(KEY)) || []); } catch { done = new Set(); }
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify([...done])); } catch {} };
-const toggle = w => { done.has(w) ? done.delete(w) : done.add(w); save(); renderList(); renderCard(); };
+const toggle = w => { const add = !done.has(w); add ? done.add(w) : done.delete(w); save(); renderList(); renderCard(); if (window.Rec) Rec.words(done.size, add); };
 const $ = id => document.getElementById(id);
 
 // 음성 읽기 (Web Speech API)
@@ -392,7 +423,7 @@ function renderCard() {
   $("mark").textContent = done.has(jp) ? "✅ 외움 (취소)" : "☐ 외웠어요";
 }
 const go = step => { i += step; flipped = false; renderCard(); };
-$("card").onclick = () => { flipped = !flipped; renderCard(); };
+$("card").onclick = () => { flipped = !flipped; renderCard(); if (flipped && window.Rec) Rec.card(); };
 $("card").onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("card").click(); } };
 $("prev").onclick = () => go(-1);
 $("next").onclick = () => go(1);
@@ -554,6 +585,180 @@ if ("mediaSession" in navigator) {
   try { ms.setActionHandler("seekbackward", () => podSeek(-10)); ms.setActionHandler("seekforward", () => podSeek(10)); } catch {}
 }
 $("lisPlay").addEventListener("click", () => pod.el.pause());
+
+// ── 🏆 내 기록 · 出席と記録 ──
+// 모든 기록은 이 기기의 localStorage("jp-rec")에만 저장돼요.
+// 다른 기능(게임 등)에서 쓰는 공개 API:
+//   Rec.game(id, score, {ko, ja})  게임 점수 기록 (최고 기록이면 🎉 알림)
+//   Rec.listen(sec) / Rec.card() / Rec.words(n, added)
+const Rec = (() => {
+  const KEY_R = "jp-rec";
+  const ymd = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const def = () => ({ days: [], longest: 0, listenSec: 0, cards: 0, wordsMax: 0, games: {}, badges: {}, today: { d: "", cards: 0, listenSec: 0, words: 0 }, night: 0, early: 0 });
+  let r;
+  try { r = Object.assign(def(), JSON.parse(localStorage.getItem(KEY_R)) || {}); } catch { r = def(); }
+  const store = () => { try { localStorage.setItem(KEY_R, JSON.stringify(r)); } catch {} };
+  let lang = (() => { try { return localStorage.getItem("jp-rec-lang"); } catch {} })() || (/^ja/i.test(navigator.language) ? "ja" : "ko");
+  const t = (ko, ja) => lang === "ja" ? ja : ko;
+
+  const today = () => { const d = ymd(); if (r.today.d !== d) r.today = { d, cards: 0, listenSec: 0, words: 0 }; return r.today; };
+  const daySet = () => new Set(r.days);
+  // 오늘 기준 연속 출석 일수 (오늘 아직 안 했으면 어제까지 이어진 것도 살아 있는 걸로 셈)
+  function streak() {
+    const s = daySet(), d = new Date();
+    if (!s.has(ymd(d))) d.setDate(d.getDate() - 1);
+    let n = 0;
+    while (s.has(ymd(d))) { n++; d.setDate(d.getDate() - 1); }
+    return n;
+  }
+  const checkedToday = () => daySet().has(ymd());
+
+  // 출석: 오늘 처음 공부(카드 넘기기·단어 외우기·듣기·게임)를 하면 도장이 찍혀요
+  function activity() {
+    today();
+    if (!checkedToday()) {
+      r.days.push(ymd());
+      const s = streak();
+      const isRecord = s > r.longest && r.days.length > 1;
+      r.longest = Math.max(r.longest, s);
+      toast(s > 1 ? t(`🌸 출석 완료! ${s}일 연속${isRecord ? " · 최고 기록!" : ""}`, `🌸 出席！${s}日連続${isRecord ? "・自己ベスト！" : ""}`)
+                  : t("🌸 오늘 출석 완료!", "🌸 今日の出席完了！"));
+    }
+    const h = new Date().getHours();
+    if (h >= 23 || h < 4) r.night++;
+    if (h >= 4 && h < 7) r.early++;
+    checkBadges(); store(); if (!$("rec").hidden) render();
+  }
+
+  const fmtMin = sec => { const m = Math.floor(sec / 60); return m >= 60 ? t(`${Math.floor(m / 60)}시간 ${m % 60}분`, `${Math.floor(m / 60)}時間${m % 60}分`) : t(`${m}분`, `${m}分`); };
+  const gamePlays = () => Object.values(r.games).reduce((a, g) => a + g.plays, 0);
+  const BADGES = [
+    ["first", "🌱", "첫 출석", "はじめての出席", "출석 1일", "出席1日", () => r.days.length >= 1],
+    ["s3", "🔥", "3일 연속", "3日連続", "연속 3일", "連続3日", () => r.longest >= 3],
+    ["s7", "🗓️", "일주일 개근", "1週間皆勤", "연속 7일", "連続7日", () => r.longest >= 7],
+    ["s30", "👑", "한 달 개근", "1ヶ月皆勤", "연속 30일", "連続30日", () => r.longest >= 30],
+    ["d10", "📅", "10일 출석", "通算10日", "총 10일", "通算10日", () => r.days.length >= 10],
+    ["w10", "📖", "단어 10개", "単語10個", "외운 단어 10", "覚えた単語10", () => r.wordsMax >= 10],
+    ["w30", "📚", "단어 30개", "単語30個", "외운 단어 30", "覚えた単語30", () => r.wordsMax >= 30],
+    ["w50", "🎓", "단어장 정복", "単語帳制覇", "50개 전부", "50個すべて", () => r.wordsMax >= 50],
+    ["c100", "🃏", "카드 100장", "カード100枚", "카드 100번 뒤집기", "カードを100回めくる", () => r.cards >= 100],
+    ["l10", "🎧", "귀가 트이는 중", "耳が慣れてきた", "10분 듣기", "10分リスニング", () => r.listenSec >= 600],
+    ["l60", "🎙️", "1시간 듣기", "1時間リスニング", "누적 60분", "累計60分", () => r.listenSec >= 3600],
+    ["l300", "🚇", "통학 마스터", "通学マスター", "누적 5시간", "累計5時間", () => r.listenSec >= 18000],
+    ["g1", "🎮", "첫 게임", "はじめてのゲーム", "게임 1판", "ゲーム1回", () => gamePlays() >= 1],
+    ["g20", "🕹️", "게임 20판", "ゲーム20回", "게임 20판", "ゲーム20回", () => gamePlays() >= 20],
+    ["owl", "🦉", "올빼미", "夜ふかし", "밤 11시~새벽 4시 공부", "23時〜4時に勉強", () => r.night >= 1],
+    ["bird", "🐓", "새벽형", "早起き", "새벽 4~7시 공부", "4時〜7時に勉強", () => r.early >= 1],
+  ];
+  function checkBadges() {
+    BADGES.forEach(([id, e, ko, ja, , , ok]) => {
+      if (!r.badges[id] && ok()) { r.badges[id] = ymd(); setTimeout(() => toast(`${e} ${t("배지 획득", "バッジ獲得")}: ${t(ko, ja)}`), 1600); }
+    });
+  }
+
+  let toastT, toastQ = Promise.resolve();
+  function toast(msg) {
+    toastQ = toastQ.then(() => new Promise(res => {
+      const el = $("toast"); el.textContent = msg; el.classList.add("show");
+      clearTimeout(toastT); toastT = setTimeout(() => { el.classList.remove("show"); setTimeout(res, 300); }, 2200);
+    }));
+  }
+
+  let calOff = 0; // 달력: 0 = 이번 달
+  function render() {
+    const s = streak(), td = today(), days = daySet(), chk = checkedToday();
+    const base = new Date(); base.setDate(1); base.setMonth(base.getMonth() + calOff);
+    const y = base.getFullYear(), m = base.getMonth(), first = new Date(y, m, 1).getDay(), last = new Date(y, m + 1, 0).getDate();
+    const monthDays = r.days.filter(d => d.startsWith(`${y}-${String(m + 1).padStart(2, "0")}`)).length;
+    const dows = lang === "ja" ? "日月火水木金土" : "일월화수목금토";
+    let cal = [...dows].map(d => `<div class="dow">${d}</div>`).join("") + "<div></div>".repeat(first);
+    for (let d = 1; d <= last; d++) {
+      const k = `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      cal += `<div class="d${days.has(k) ? " on" : ""}${k === ymd() ? " today" : ""}">${d}</div>`;
+    }
+    const games = Object.entries(r.games).sort((a, b) => b[1].at - a[1].at);
+    const got = BADGES.filter(b => r.badges[b[0]]).length;
+    $("rec").innerHTML = `
+      <button class="rec-lang" id="recLang">${lang === "ja" ? "🇰🇷 한국어" : "🇯🇵 日本語"}</button>
+      <h2 style="margin-top:4px">${t("출석", "出席")}</h2>
+      <div class="rec-hero">
+        <div class="big">🔥 ${s}</div>
+        <div class="sub">${t(`일 연속 출석 · 최고 ${r.longest}일`, `日連続 · 自己ベスト ${r.longest}日`)}</div>
+        <div class="rec-today${chk ? "" : " todo"}">${chk
+          ? t(`✅ 오늘 출석 완료 · 카드 ${td.cards}장 · 듣기 ${fmtMin(td.listenSec)}`, `✅ 今日は出席済み · カード${td.cards}枚 · リスニング${fmtMin(td.listenSec)}`)
+          : t(`🌱 아직 오늘 출석 전이에요. 카드 한 장만 넘겨도 출석돼요!`, `🌱 今日はまだ出席していません。カードを1枚めくるだけでOK！`)}</div>
+      </div>
+      <div class="cal-head">
+        <button id="calPrev" aria-label="${t("이전 달", "前の月")}">◀</button>
+        <b>${lang === "ja" ? `${y}年${m + 1}月` : `${y}년 ${m + 1}월`} · 🌸 ${monthDays}${t("일", "日")}</b>
+        <button id="calNext" aria-label="${t("다음 달", "次の月")}" ${calOff >= 0 ? "disabled" : ""}>▶</button>
+      </div>
+      <div class="cal">${cal}</div>
+
+      <h2>${t("내 기록", "マイ記録")}</h2>
+      <div class="rec-grid">
+        <div class="rec-stat"><b>${r.days.length}${t("일", "日")}</b><span>📅 ${t("총 출석", "通算出席")}</span></div>
+        <div class="rec-stat"><b>${r.longest}${t("일", "日")}</b><span>🔥 ${t("최장 연속", "最長連続")}</span></div>
+        <div class="rec-stat"><b>${done.size} / ${W.length}</b><span>📖 ${t(`외운 단어 (최고 ${r.wordsMax})`, `覚えた単語（最高 ${r.wordsMax}）`)}</span></div>
+        <div class="rec-stat"><b>${fmtMin(r.listenSec)}</b><span>🎧 ${t("들은 시간", "聞いた時間")}</span></div>
+        <div class="rec-stat"><b>${r.cards}</b><span>🃏 ${t("뒤집은 카드", "めくったカード")}</span></div>
+        <div class="rec-stat"><b>${gamePlays()}</b><span>🎮 ${t("게임 판수", "ゲーム回数")}</span></div>
+      </div>
+
+      <h2>${t("게임 최고 기록", "ゲーム自己ベスト")}</h2>
+      <div class="games-rec">${games.length ? games.map(([, g]) =>
+        `<div class="phrase"><span>${t(g.ko, g.ja)}</span><span><b>${g.best}</b> <small style="color:var(--muted)">· ${g.plays}${t("판", "回")}</small></span></div>`).join("")
+        : `<p class="lis-step">${t("아직 기록이 없어요. 게임을 한 판 하면 최고 점수가 여기 쌓여요.", "まだ記録がありません。ゲームを1回遊ぶと、ここにベストスコアが残ります。")}</p>`}</div>
+
+      <h2>${t(`배지 ${got} / ${BADGES.length}`, `バッジ ${got} / ${BADGES.length}`)}</h2>
+      <div class="badges">${BADGES.map(([id, e, ko, ja, hko, hja]) =>
+        `<div class="badge${r.badges[id] ? "" : " lock"}"><span class="e">${e}</span>${t(ko, ja)}<small>${r.badges[id] ? r.badges[id].slice(5).replace("-", "/") : t(hko, hja)}</small></div>`).join("")}</div>
+      <p class="lis-credit">${t("기록은 이 기기의 브라우저에만 저장돼요.", "記録はこの端末のブラウザにだけ保存されます。")}</p>`;
+    $("recLang").onclick = () => { lang = lang === "ja" ? "ko" : "ja"; try { localStorage.setItem("jp-rec-lang", lang); } catch {} render(); };
+    $("calPrev").onclick = () => { calOff--; render(); };
+    $("calNext").onclick = () => { if (calOff < 0) { calOff++; render(); } };
+  }
+
+  // 듣기 시간: 재생 중 timeupdate 사이의 실제 경과 시간을 더함 (화면 꺼져도 동작)
+  const tracker = el => { let last = 0; el.addEventListener("timeupdate", () => {
+    const now = Date.now(), dt = (now - last) / 1000; last = now;
+    if (!el.paused && dt > 0 && dt < 5) api.listen(dt);
+  }); };
+
+  let lastSave = 0;
+  const api = {
+    render, toast,
+    card() { r.cards++; today().cards++; activity(); },
+    words(n, added) { r.wordsMax = Math.max(r.wordsMax, n); if (added) { today().words++; activity(); } else store(); },
+    listen(sec) {
+      const wasMin = Math.floor(today().listenSec / 60);
+      r.listenSec += sec; today().listenSec += sec;
+      // 1분 들으면 출석으로 인정
+      if (!checkedToday() && today().listenSec >= 60) return activity();
+      if (Math.floor(today().listenSec / 60) !== wasMin) { checkBadges(); if (!$("rec").hidden) render(); }
+      if (Date.now() - lastSave > 5000) { lastSave = Date.now(); store(); }
+    },
+    game(id, score, name = {}) {
+      const g = r.games[id] || (r.games[id] = { best: null, plays: 0 });
+      g.ko = name.ko || g.ko || id; g.ja = name.ja || g.ja || id;
+      const isBest = g.best === null || score > g.best;
+      if (g.best !== null && isBest) toast(t(`🎉 신기록! ${g.ko} ${score}점`, `🎉 自己ベスト更新！${g.ja} ${score}点`));
+      if (isBest) g.best = score;
+      g.plays++; g.at = Date.now();
+      activity();
+      return isBest;
+    },
+    tracker,
+  };
+  r.wordsMax = Math.max(r.wordsMax, done.size);
+  if (r.longest < streak()) r.longest = streak();
+  checkBadges(); store();
+  return api;
+})();
+window.Rec = Rec;
+Rec.tracker(lis.el);
+Rec.tracker(pod.el);
+document.querySelector('nav [data-tab="rec"]').addEventListener("click", () => Rec.render());
 
 renderList();
 renderCard();
