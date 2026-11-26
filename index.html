@@ -1818,50 +1818,59 @@ if (!LANG_SAVED) {
 }
 </script>
 <script>
-// ── 伝言板(게시판): 피드백·질문·자유글. 글은 Supabase 무료 DB에 저장 (설정: community/setup.sql) ──
-// url: Supabase > Project Settings > Data API 의 Project URL, key: API Keys 의 publishable(anon) 키 (공개돼도 되는 키)
-const BBS_CFG = { url: "", key: "" };
+// ── 伝言板(게시판): 피드백·질문·자유글. 글은 Firebase(Firestore 무료 요금제)에 저장. 규칙: community/firestore.rules ──
+// Firebase 콘솔 > 프로젝트 설정 > 내 앱(웹) 의 firebaseConfig 값. 공개돼도 되는 값이에요 (실제 보호는 보안 규칙이 함).
+const BBS_CFG = { apiKey: "", authDomain: "", projectId: "", appId: "" };
 (() => {
-  const sec = $("bbs"), READY = !!(BBS_CFG.url && BBS_CFG.key), PAGE = 20;
+  const sec = $("bbs"), READY = !!(BBS_CFG.apiKey && BBS_CFG.projectId), PAGE = 30, V = "11.10.0";
   const ls = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch {} };
   const lsJ = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) || d; } catch { return d; } };
-  const rnd = n => [...crypto.getRandomValues(new Uint8Array(n))].map(b => b.toString(16).padStart(2, "0")).join("");
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
-  let dev = ls("kj-bbs-dev"); if (!dev) { dev = rnd(12); ls("kj-bbs-dev", dev); }
-  const mine = lsJ("kj-bbs-mine", {}), liked = new Set(lsJ("kj-bbs-liked", []));
-  const saveMine = () => ls("kj-bbs-mine", JSON.stringify(mine)), saveLiked = () => ls("kj-bbs-liked", JSON.stringify([...liked].slice(-500)));
+  const liked = new Set(lsJ("kj-bbs-liked", []));
+  const saveLiked = () => ls("kj-bbs-liked", JSON.stringify([...liked].slice(-500)));
   // 운영자: 주소 뒤에 ?admin=비밀번호 를 붙여 한 번 열면 이 기기에 기억 (주소에서는 바로 지움)
   const qs = new URLSearchParams(location.search);
   if (qs.has("admin")) { ls("kj-bbs-admin", qs.get("admin")); qs.delete("admin"); history.replaceState(null, "", location.pathname + (qs.toString() ? "?" + qs : "") + location.hash); }
-  let admin = ls("kj-bbs-admin") || "", isAdmin = false;
+  const adminKey = ls("kj-bbs-admin") || "";
+  let isAdmin = false, me = null;
 
   const CATS = { idea:["💡", "의견·요청", "要望・アイデア"], bug:["🐛", "버그 신고", "不具合"], ask:["❓", "질문", "質問"], free:["💬", "자유", "雑談"] };
   const catName = c => { const x = CATS[c] || CATS.free; return `${x[0]} ${tr(x[1], x[2])}`; };
-  const ERR = { slow:["조금만 천천히! 잠시 뒤에 다시 써 주세요", "少し待ってからもう一度どうぞ"], busy:["지금 글이 너무 많아요. 1분 뒤에 다시", "混み合っています。1分後にもう一度"],
-    link:["링크(주소)는 올릴 수 없어요", "リンク(URL)は書けません"], no_parent:["이 글은 지워졌어요", "この投稿は削除されました"] };
-  const errMsg = e => { const m = ERR[e?.message]; return m ? tr(m[0], m[1]) : tr("연결이 안 돼요. 잠시 뒤 다시 해 주세요", "つながりません。しばらくしてからもう一度"); };
+  const MSG = { slow:["조금만 천천히! 15초 뒤에 다시 써 주세요", "少し待ってから（15秒後）もう一度どうぞ"], link:["링크(주소)는 올릴 수 없어요", "リンク(URL)は書けません"],
+    net:["연결이 안 돼요. 잠시 뒤 다시 해 주세요", "つながりません。しばらくしてからもう一度"] };
+  const msg = k => tr(MSG[k][0], MSG[k][1]);
   const say = m => { const t = $("toast"); if (!t) return; t.textContent = m; t.classList.add("show"); clearTimeout(say.t); say.t = setTimeout(() => t.classList.remove("show"), 2600); };
+  const fail = e => { console.warn("bbs", e); say(msg("net")); };
 
-  async function api(path, body) {
-    const h = { apikey: BBS_CFG.key };
-    if (BBS_CFG.key.startsWith("eyJ")) h.Authorization = "Bearer " + BBS_CFG.key;
-    if (body) h["Content-Type"] = "application/json";
-    const r = await fetch(`${BBS_CFG.url.replace(/\/$/, "")}/rest/v1/${path}`, { method: body ? "POST" : "GET", headers: h, body: body && JSON.stringify(body) });
-    const j = await r.json().catch(() => null);
-    if (!r.ok) throw new Error(j?.message || "net");
-    return j;
-  }
-  const rpc = (fn, args) => api("rpc/" + fn, args);
-  const COLS = "select=id,created_at,parent_id,cat,lang,nick,body,is_admin,likes,replies";
+  // Firebase는 게시판을 처음 열 때만 불러옴
+  let FB;
+  const fb = () => FB || (FB = (async () => {
+    const base = `https://www.gstatic.com/firebasejs/${V}/`;
+    const [{ initializeApp }, A, F] = await Promise.all(["firebase-app", "firebase-auth", "firebase-firestore"].map(m => import(base + m + ".js")));
+    const app = initializeApp(BBS_CFG), auth = A.getAuth(app), db = F.getFirestore(app);
+    if (BBS_CFG.emu) { A.connectAuthEmulator(auth, `http://${BBS_CFG.emu}:9099`, { disableWarnings: true }); F.connectFirestoreEmulator(db, BBS_CFG.emu, 8080); }
+    me = auth.currentUser || (await new Promise(r => { const off = A.onAuthStateChanged(auth, u => { off(); r(u); }); })) || (await A.signInAnonymously(auth)).user;
+    const x = { ...F, db, uid: me.uid, P: (...p) => F.doc(db, "posts", ...p.map(String)) };
+    try {
+      if (adminKey) {
+        const ad = F.doc(db, "admins", me.uid);
+        isAdmin = (await F.getDoc(ad)).exists();
+        if (!isAdmin) { await F.setDoc(ad, { key: adminKey }); isAdmin = true; }
+      }
+    } catch { isAdmin = false; }
+    return x;
+  })().catch(e => { FB = null; throw e; }));
 
   const ago = t => {
-    const s = Math.max(0, (Date.now() - new Date(t)) / 1000);
+    if (!t) return tr("방금", "たった今");
+    const s = Math.max(0, (Date.now() - t) / 1000);
     if (s < 60) return tr("방금", "たった今");
     if (s < 3600) return tr(`${s / 60 | 0}분 전`, `${s / 60 | 0}分前`);
     if (s < 86400) return tr(`${s / 3600 | 0}시간 전`, `${s / 3600 | 0}時間前`);
     if (s < 86400 * 30) return tr(`${s / 86400 | 0}일 전`, `${s / 86400 | 0}日前`);
     const d = new Date(t); return `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`;
   };
+  const row = s => { const v = s.data(); return { ...v, id: s.id, t: v.createdAt?.toMillis?.() }; };
   // 상대 언어로 쓴 글이면 🌐 번역 버튼 (구글 번역으로 열기)
   const foreign = b => JA ? /[가-힣]/.test(b) : /[ぁ-んァ-ヶ]/.test(b) || (/[一-龯]/.test(b) && !/[가-힣]/.test(b));
 
@@ -1890,44 +1899,59 @@ const BBS_CFG = { url: "", key: "" };
   const form = $("bbsForm"), body = $("bbsBody"), list = $("bbsList");
   if (!READY) form.querySelectorAll("textarea,input,button").forEach(e => e.disabled = true);
   body.oninput = () => $("bbsCnt").textContent = `${body.value.length}/500`;
-  let filter = "", last = null, busy = false;
+  let filter = "", lastSnap = null, busy = false, lastPost = 0;
 
-  const card = (p, reply) => {
-    const own = mine[p.id], fb = foreign(p.body);
-    return `<article class="bp${p.is_admin ? " staff" : ""}" data-id="${p.id}">
-      <div class="bh">${reply ? "" : `<span class="tag">${catName(p.cat)}</span>`}<b>${p.lang === "ja" ? "🇯🇵" : "🇰🇷"} ${esc(p.nick)}</b>${p.is_admin ? `<span class="staffb">🚉 ${tr("역무원", "駅員")}</span>` : ""}<time datetime="${esc(p.created_at)}">${ago(p.created_at)}</time></div>
+  const card = (p, parent) => {
+    const own = me && p.uid === me.uid, fb2 = foreign(p.body);
+    return `<article class="bp${p.admin ? " staff" : ""}" data-id="${esc(p.id)}"${parent ? ` data-pid="${esc(parent)}"` : ""}>
+      <div class="bh">${parent ? "" : `<span class="tag">${catName(p.cat)}</span>`}<b>${p.lang === "ja" ? "🇯🇵" : "🇰🇷"} ${esc(p.nick)}</b>${p.admin ? `<span class="staffb">🚉 ${tr("역무원", "駅員")}</span>` : ""}<time>${ago(p.t)}</time></div>
       <p class="bb">${esc(p.body)}</p>
       <div class="ba">
-        ${reply ? "" : `<button data-a="like" class="${liked.has(p.id) ? "on" : ""}" aria-label="${tr("공감", "いいね")}">👍 ${p.likes}</button><button data-a="rep">💬 ${tr("댓글", "返信")} ${p.replies}</button>`}
-        ${fb ? `<button data-a="tr">🌐 ${tr("번역", "翻訳")}</button>` : ""}
+        ${parent ? "" : `<button data-a="like" class="${liked.has(p.id) ? "on" : ""}" aria-label="${tr("공감", "いいね")}">👍 ${+p.likes || 0}</button><button data-a="rep">💬 ${tr("댓글", "返信")} ${+p.replies || 0}</button>`}
+        ${fb2 ? `<button data-a="tr">🌐 ${tr("번역", "翻訳")}</button>` : ""}
         ${own ? `<button data-a="del">🗑 ${tr("지우기", "削除")}</button>` : `<button data-a="flag" aria-label="${tr("신고", "通報")}">🚩</button>`}
         ${isAdmin ? `<button data-a="hide">🙈 ${tr("숨기기", "非表示")}</button>` : ""}
       </div>
-      ${reply ? "" : `<div class="rp" hidden></div>`}
+      ${parent ? "" : `<div class="rp" hidden></div>`}
     </article>`;
   };
 
+  // 목록: 최신순으로 받아서 숨김·종류는 여기서 거름 (색인 만들 필요 없게)
   async function load(more) {
     if (!READY || busy) return;
     busy = true;
-    if (!more) { last = null; list.innerHTML = `<p class="bbs-empty">${tr("불러오는 중…", "読み込み中…")}</p>`; }
+    if (!more) { lastSnap = null; list.innerHTML = `<p class="bbs-empty">${tr("불러오는 중…", "読み込み中…")}</p>`; }
     try {
-      const rows = await api(`kj_posts?${COLS}&parent_id=is.null${filter ? "&cat=eq." + filter : ""}${last ? "&id=lt." + last : ""}&order=id.desc&limit=${PAGE}`);
-      if (!more) list.innerHTML = "";
-      list.insertAdjacentHTML("beforeend", rows.map(p => card(p)).join(""));
-      if (rows.length) last = rows[rows.length - 1].id;
-      if (!list.children.length) list.innerHTML = `<p class="bbs-empty">${tr("아직 글이 없어요. 첫 글을 남겨 주세요! ✏️", "まだ投稿がありません。最初のひとことをどうぞ！✏️")}</p>`;
-      $("bbsMore").hidden = rows.length < PAGE;
-    } catch (e) { if (!more) list.innerHTML = `<p class="bbs-empty">${errMsg(e)}</p>`; else say(errMsg(e)); }
+      const F = await fb();
+      let shown = 0, got;
+      do {
+        const q = F.query(F.collection(F.db, "posts"), F.orderBy("createdAt", "desc"), ...(lastSnap ? [F.startAfter(lastSnap)] : []), F.limit(PAGE));
+        const snap = await F.getDocs(q);
+        got = snap.docs.length;
+        if (got) lastSnap = snap.docs[got - 1];
+        const rows = snap.docs.map(row).filter(p => !p.hidden && (!filter || p.cat === filter));
+        if (!more && !shown) list.innerHTML = "";
+        list.insertAdjacentHTML("beforeend", rows.map(p => card(p)).join(""));
+        shown += rows.length;
+      } while (got === PAGE && shown < 8);
+      if (!list.querySelector(".bp")) list.innerHTML = `<p class="bbs-empty">${tr("아직 글이 없어요. 첫 글을 남겨 주세요! ✏️", "まだ投稿がありません。最初のひとことをどうぞ！✏️")}</p>`;
+      $("bbsMore").hidden = got < PAGE;
+    } catch (e) { console.warn("bbs", e); if (!more) list.innerHTML = `<p class="bbs-empty">${msg("net")}</p>`; else say(msg("net")); }
     busy = false;
   }
 
   async function post(parent, text, cat) {
-    const tok = rnd(16);
-    const id = await rpc("kj_post", { p_parent: parent, p_cat: cat, p_lang: LANG, p_nick: nick, p_body: text, p_device: dev, p_token: tok, p_admin: isAdmin ? admin : null });
-    mine[id] = tok; saveMine();
-    return id;
+    if (!isAdmin && /(https?:\/\/|www\.)/i.test(text)) throw "link";
+    if (!isAdmin && Date.now() - lastPost < 15500) throw "slow";
+    const F = await fb(), b = F.writeBatch(F.db);
+    const data = { uid: F.uid, nick, body: text, lang: LANG, createdAt: F.serverTimestamp(), reports: 0, hidden: false, admin: isAdmin };
+    b.set(F.doc(F.db, "users", F.uid), { last: F.serverTimestamp() });
+    if (parent) { b.set(F.doc(F.collection(F.P(parent), "replies")), data); b.update(F.P(parent), { replies: F.increment(1) }); }
+    else b.set(F.doc(F.collection(F.db, "posts")), { ...data, cat, likes: 0, replies: 0 });
+    try { await b.commit(); } catch (e) { if (e.code === "permission-denied") throw "slow"; throw e; }
+    lastPost = Date.now();
   }
+  const postErr = e => typeof e === "string" ? say(msg(e)) : fail(e);
 
   form.onsubmit = async e => {
     e.preventDefault();
@@ -1940,7 +1964,7 @@ const BBS_CFG = { url: "", key: "" };
       body.value = ""; body.oninput(); say(tr("남겼어요! 고마워요 🙇", "投稿しました！ありがとう 🙇"));
       filter = ""; sec.querySelectorAll("[data-f]").forEach(b => b.setAttribute("aria-pressed", b.dataset.f === ""));
       load();
-    } catch (err) { say(errMsg(err)); }
+    } catch (err) { postErr(err); }
     btn.disabled = false;
   };
 
@@ -1951,22 +1975,24 @@ const BBS_CFG = { url: "", key: "" };
   $("bbsMore").onclick = () => load(true);
 
   async function openReplies(art) {
-    const rp = art.querySelector(".rp"), id = +art.dataset.id;
+    const rp = art.querySelector(".rp"), id = art.dataset.id;
     rp.hidden = false; rp.innerHTML = `<p class="bbs-empty">…</p>`;
     try {
-      const rows = await api(`kj_posts?${COLS}&parent_id=eq.${id}&order=id.asc&limit=100`);
-      rp.innerHTML = rows.map(p => card(p, true)).join("") +
+      const F = await fb();
+      const snap = await F.getDocs(F.query(F.collection(F.P(id), "replies"), F.orderBy("createdAt"), F.limit(100)));
+      rp.innerHTML = snap.docs.map(row).filter(p => !p.hidden).map(p => card(p, id)).join("") +
         `<form class="rf"><input maxlength="500" required aria-label="${tr("댓글", "返信")}" placeholder="${tr("댓글 달기", "返信する")}"><button>${tr("등록", "送信")}</button></form>`;
       rp.querySelector(".rf").onsubmit = async e => {
         e.preventDefault();
         const inp = e.target.querySelector("input"), t = inp.value.trim(); if (!t) return;
         nick = $("bbsNick").value.trim() || nick;
         e.target.querySelector("button").disabled = true;
-        try { await post(id, t, "free"); const btn = art.querySelector('[data-a="rep"]'); btn.textContent = btn.textContent.replace(/\d+$/, m => +m + 1); openReplies(art); }
-        catch (err) { say(errMsg(err)); e.target.querySelector("button").disabled = false; }
+        try { await post(id, t); bump(art, 1); openReplies(art); }
+        catch (err) { postErr(err); e.target.querySelector("button").disabled = false; }
       };
-    } catch (err) { rp.innerHTML = `<p class="bbs-empty">${errMsg(err)}</p>`; }
+    } catch (err) { console.warn("bbs", err); rp.innerHTML = `<p class="bbs-empty">${msg("net")}</p>`; }
   }
+  const bump = (art, n) => { const btn = art.querySelector('[data-a="rep"]'); if (btn) btn.textContent = btn.textContent.replace(/\d+$/, m => Math.max(0, +m + n)); };
 
   // 신고·지우기는 실수 방지로 두 번 눌러야 실행
   const twice = (b, label) => { if (b.dataset.sure) return true; b.dataset.sure = 1; b.dataset.old = b.textContent; b.textContent = label; b.classList.add("warn");
@@ -1974,53 +2000,64 @@ const BBS_CFG = { url: "", key: "" };
 
   list.addEventListener("click", async e => {
     const b = e.target.closest("[data-a]"); if (!b) return;
-    const art = b.closest(".bp"), id = +art.dataset.id, a = b.dataset.a;
+    const art = b.closest(".bp"), id = art.dataset.id, pid = art.dataset.pid, a = b.dataset.a;
     try {
-      if (a === "rep") { const rp = art.querySelector(".rp"); if (rp.hidden) openReplies(art); else rp.hidden = true; }
-      else if (a === "like") {
-        if (liked.has(id)) return;
-        liked.add(id); saveLiked(); b.classList.add("on");
-        b.textContent = "👍 " + await rpc("kj_vote", { p_id: id, p_device: dev, p_kind: "like" });
-      }
-      else if (a === "tr") open(`https://translate.google.com/?sl=auto&tl=${JA ? "ja" : "ko"}&op=translate&text=${encodeURIComponent(art.querySelector(".bb").textContent)}`, "_blank", "noopener");
-      else if (a === "flag") { if (!twice(b, tr("신고할까요?", "通報する？"))) return; await rpc("kj_vote", { p_id: id, p_device: dev, p_kind: "report" }); b.remove(); say(tr("신고했어요. 확인할게요", "通報しました。確認します")); }
-      else if (a === "del") { if (!twice(b, tr("정말 지울까요?", "本当に削除？"))) return; if (await rpc("kj_delete", { p_id: id, p_token: mine[id] })) { delete mine[id]; saveMine(); afterRemove(art); } }
-      else if (a === "hide") { await rpc("kj_admin_hide", { p_key: admin, p_id: id, p_hidden: true }); afterRemove(art); }
-    } catch (err) { say(errMsg(err)); }
+      if (a === "rep") { const rp = art.querySelector(".rp"); if (rp.hidden) openReplies(art); else rp.hidden = true; return; }
+      if (a === "tr") { open(`https://translate.google.com/?sl=auto&tl=${JA ? "ja" : "ko"}&op=translate&text=${encodeURIComponent(art.querySelector(".bb").textContent)}`, "_blank", "noopener"); return; }
+      if (a === "like" && liked.has(id)) return;
+      if (a === "flag" && !twice(b, tr("신고할까요?", "通報する？"))) return;
+      if (a === "del" && !twice(b, tr("정말 지울까요?", "本当に削除？"))) return;
+      const F = await fb(), ref = pid ? F.doc(F.P(pid), "replies", id) : F.P(id);
+      if (a === "like") {
+        liked.add(id); saveLiked(); b.classList.add("on"); b.textContent = "👍 " + (+b.textContent.replace(/\D/g, "") + 1);
+        const w = F.writeBatch(F.db);
+        w.set(F.doc(ref, "likes", F.uid), {}); w.update(ref, { likes: F.increment(1) });
+        await w.commit().catch(err => { if (err.code !== "permission-denied") throw err; }); // 이미 공감한 글이면 조용히 넘어감
+      } else if (a === "flag") {
+        await F.runTransaction(F.db, async tx => {
+          const cur = await tx.get(ref); if (!cur.exists()) return;
+          const r = (cur.data().reports || 0) + 1;
+          tx.set(F.doc(ref, "reports", F.uid), {});
+          tx.update(ref, { reports: r, hidden: !!cur.data().hidden || r >= 3 });
+        }).catch(err => { if (err.code !== "permission-denied") throw err; });
+        b.remove(); say(tr("신고했어요. 확인할게요", "通報しました。確認します"));
+      } else if (a === "del") {
+        const w = F.writeBatch(F.db); w.delete(ref); if (pid) w.update(F.P(pid), { replies: F.increment(-1) });
+        await w.commit(); afterRemove(art);
+      } else if (a === "hide") { await F.updateDoc(ref, { hidden: true }); afterRemove(art); }
+    } catch (err) { fail(err); }
   });
-  const afterRemove = art => { const top = art.parentElement.closest(".bp"); art.remove(); if (top) { const btn = top.querySelector('[data-a="rep"]'); btn.textContent = btn.textContent.replace(/\d+$/, m => Math.max(0, m - 1)); } };
+  const afterRemove = art => { const top = art.parentElement.closest(".bp"); art.remove(); if (top) bump(top, -1); };
 
   // 운영자 모드: 숨긴 글 목록 → 되살리기
-  async function checkAdmin() {
-    if (!READY || !admin) return;
-    try { isAdmin = await rpc("kj_admin_check", { p_key: admin }); } catch { isAdmin = false; }
+  async function adminBar() {
     if (!isAdmin) return;
     $("bbsAdmin").innerHTML = `<div class="bbs-admin">🚉 ${tr("운영자 모드 · 내 글에 역무원 표시가 붙어요", "運営モード")} <button id="bbsHid">🙈 ${tr("숨긴 글 보기", "非表示の投稿")}</button> <button id="bbsOut">${tr("끄기", "オフ")}</button></div><div id="bbsHidList"></div>`;
     $("bbsOut").onclick = () => { try { localStorage.removeItem("kj-bbs-admin"); } catch {} location.reload(); };
     $("bbsHid").onclick = async () => {
       const box = $("bbsHidList");
       try {
-        const rows = await rpc("kj_admin_hidden", { p_key: admin });
-        box.innerHTML = rows.length ? rows.map(p => `<article class="bp" data-hid="${p.id}"><div class="bh"><b>${esc(p.nick)}</b><span class="tag">🚩 ${p.reports}</span><time>${ago(p.created_at)}</time></div><p class="bb">${esc(p.body)}</p><div class="ba"><button data-un="${p.id}">↩️ ${tr("되살리기", "元に戻す")}</button></div></article>`).join("") : `<p class="bbs-empty">${tr("숨긴 글 없음", "なし")}</p>`;
-        box.onclick = async e => { const u = e.target.closest("[data-un]"); if (!u) return; try { await rpc("kj_admin_hide", { p_key: admin, p_id: +u.dataset.un, p_hidden: false }); u.closest(".bp").remove(); load(); } catch (err) { say(errMsg(err)); } };
-      } catch (err) { say(errMsg(err)); }
+        const F = await fb(), snap = await F.getDocs(F.query(F.collection(F.db, "posts"), F.where("hidden", "==", true), F.limit(50)));
+        const rows = snap.docs.map(row);
+        box.innerHTML = rows.length ? rows.map(p => `<article class="bp"><div class="bh"><b>${esc(p.nick)}</b><span class="tag">🚩 ${+p.reports || 0}</span><time>${ago(p.t)}</time></div><p class="bb">${esc(p.body)}</p><div class="ba"><button data-un="${esc(p.id)}">↩️ ${tr("되살리기", "元に戻す")}</button></div></article>`).join("") : `<p class="bbs-empty">${tr("숨긴 글 없음 (댓글은 콘솔에서)", "なし")}</p>`;
+        box.onclick = async e => { const u = e.target.closest("[data-un]"); if (!u) return; try { await F.updateDoc(F.P(u.dataset.un), { hidden: false, reports: 0 }); u.closest(".bp").remove(); load(); } catch (err) { fail(err); } };
+      } catch (err) { fail(err); }
     };
-    load();
   }
 
   // 아래 메뉴 이름, 탭 머리(역 이름판), 홈 발차 안내판 7번선
   const nb = document.querySelector('nav [data-tab="bbs"]');
   nb.lastChild.nodeValue = tr("게시판", "掲示板");
-  let loaded = false;
-  nb.addEventListener("click", () => { if (!loaded) { loaded = true; load(); } });
+  let opened = false;
+  const openBoard = async () => { if (opened || !READY) return; opened = true; await load(); adminBar(); };
+  nb.addEventListener("click", openBoard);
   if (typeof LINES !== "undefined") { LINES.bbs = JA ? ["B", "07", "伝言板", "게시판 · Dengonban"] : ["B", "07", "게시판", "伝言板 · Dengonban"]; lineh("bbs"); new MutationObserver(() => lineh("bbs")).observe(sec, { childList:true }); }
   if (typeof TAB_NAME !== "undefined") TAB_NAME.bbs = tr("게시판", "掲示板");
-  const board = document.querySelector(".board .ticker");
-  if (board) {
-    board.insertAdjacentHTML("beforebegin", `<button class="row" role="listitem" data-go3="bbs"><span class="kind" style="--c:var(--L-bbs)">臨時</span><span class="dest"><b>${tr("게시판 行", "伝言板 行き")}</b><small>${tr("伝言板 行き", "게시판 행")}</small></span><span class="pl">7<small>番線</small></span></button>`);
+  const ticker = document.querySelector(".board .ticker");
+  if (ticker) {
+    ticker.insertAdjacentHTML("beforebegin", `<button class="row" role="listitem" data-go3="bbs"><span class="kind" style="--c:var(--L-bbs)">臨時</span><span class="dest"><b>${tr("게시판 行", "伝言板 行き")}</b><small>${tr("伝言板 行き", "게시판 행")}</small></span><span class="pl">7<small>番線</small></span></button>`);
     document.querySelector("[data-go3]").onclick = () => goTab("bbs");
   }
-  checkAdmin();
 })();
 </script>
 </body>
