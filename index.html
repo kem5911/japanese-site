@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>한일 전철 · 日韓でんしゃ</title>
+<meta name="description" content="한국인은 일본어(JLPT N5~N1), 日本人は韓国語(TOPIK 1~6級)を。레벨별 Day 단어장, 원어민 발음, 게임으로 가볍게 배우는 무료 한일 학습 앱. 無料の日韓学習アプリ。">
+<meta property="og:title" content="한일 전철 · 日韓でんしゃ">
+<meta property="og:description" content="JLPT·TOPIK 단어장과 원어민 발음, 게임으로 배우는 무료 한일 학습 앱 · 無料の日韓学習アプリ">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://kem5911.github.io/japanese-site/">
+<link rel="canonical" href="https://kem5911.github.io/japanese-site/">
 <meta name="theme-color" content="#14213d">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=DotGothic16&family=Noto+Sans+KR:wght@400;700;800;900&family=Noto+Sans+JP:wght@400;700;900&display=swap">
@@ -404,6 +410,7 @@
     <div class="dpick" role="group" aria-label="단어장 고르기"></div>
     <div class="bar"><span id="count"></span><label><input type="checkbox" id="hideDone"> 외운 단어 숨기기</label></div>
     <div id="words"></div>
+    <p class="lis-credit" id="wordCredit"></p>
   </section>
 
   <section id="flash" hidden>
@@ -771,7 +778,7 @@ const KO_L = [
   ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EC%B0%A9%ED%95%9C_%EC%9D%BC%EC%9D%84_%ED%95%B4%EC%95%BC%EC%A7%80..wav", "HappyMidnight", "착한 일을 해야지.", "いいことをしなきゃね。"],
   ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EB%82%B4%EA%B0%80_%EA%B7%B8_%EC%8B%9C%ED%97%98%EC%97%90_%EC%96%B4%EB%96%BB%EA%B2%8C_%ED%86%B5%EA%B3%BC%ED%95%98%EC%A7%80%3F.wav", "HappyMidnight", "내가 그 시험에 어떻게 통과하지?", "あの試験、どうやって受かればいいんだろう？"],
   ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EA%B8%B0%EC%88%99%EC%82%AC%EB%8A%94_%EA%B5%90%EC%8B%A4%EC%97%90%EC%84%9C_%EB%A7%8E%EC%9D%B4_%EA%B0%80%EA%B9%8C%EC%9B%8C%EC%9A%94..wav", "HappyMidnight", "기숙사는 교실에서 많이 가까워요.", "寮は教室からとても近いです。"],
-  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EC%A7%80%EB%82%9C_%EC%A3%BC%EC%97%90_%EA%B7%B8%EB%8A%94_%EC%95%84%ED%8C%A0%EB%8A%94%EB%8D%B0%2C_%EC%A7%80%EA%B8%88%EC%9D%80_%EC%9D%B4%EB%AF%B8_%EC%A2%8B%EC%95%84%EC%A1%8C%EC%96%B4%EC%9A%94..wav", "HappyMidnight", "지난 주에 그는 아팠는데, 지금은 이미 좋아졌어요.", "先週彼は具合が悪かったけど、今はもう良くなりました。"]
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EC%A7%80%EB%82%9C_%EC%A3%BC%EC%97%90_%EA%B7%B8%EB%8A%94_%EC%95%84%ED%8C%A0%EB%8A%94%EB%8D%B0%2C_%EC%A7%80%EA%B8%88%EC%9D%80_%EC%9D%B4%EB%AF%B8_%EC%A2%8B%EC%95%84%EC%A1%8C%EC%96%B4%EC%9A%94..wav", "HappyMidnight", "지난 주에 그는 아팠는데, 지금은 이미 좋아졌어요.", "先週彼は具合が悪かったけど、今はもう良くなりました。"],
   ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EC%95%88_%EB%8F%8C%EC%95%84%EA%B0%80%EB%8F%84_%EB%8F%BC%EC%9A%94%3F.wav", "HappyMidnight", "안 돌아가도 돼요?", "帰らなくてもいいですか？"],
   ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EC%83%81%ED%95%98%EC%9D%B4%EB%8A%94_%EC%A7%80%EA%B8%88_%EB%AA%87_%EB%8F%84%EC%98%88%EC%9A%94%3F.wav", "HappyMidnight", "상하이는 지금 몇 도예요?", "上海は今、何度ですか？"],
   ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%ED%99%8D%EC%BD%A9%EC%9D%98_%EA%B8%B0%EC%98%A8%EC%9D%80_%EB%AA%87_%EB%8F%84%EC%98%88%EC%9A%94%3F.wav", "HappyMidnight", "홍콩의 기온은 몇 도예요?", "香港の気温は何度ですか？"],
@@ -1043,6 +1050,9 @@ $("mark").onclick = () => { const d = deck(); toggle(items[d[i]].key); };
 $("shuffle").onclick = () => { order.sort(() => Math.random() - 0.5); i = 0; flipped = false; renderCard(); };
 $("skipDone").onchange = () => { i = 0; flipped = false; renderCard(); };
 renderPick();
+$("wordCredit").textContent = tr(
+  "🔊 단어 발음은 원어민 녹음이에요 (기계 음성 아님). 녹음: Lingua Libre · Wikimedia Commons 기여자 Fukujinzuke (CC BY 4.0), I JethroBT·Zsrtrgh (CC BY-SA 4.0), CKali·葵心·Higa4 외 (CC0). 녹음이 아직 없는 단어는 🔊 버튼이 없어요.",
+  "🔊 単語の発音はネイティブの録音です（機械音声ではありません）。録音: Lingua Libre · Wikimedia Commons の 호로조・CHK2605 ほか (CC0)、HappyMidnight・Gaillon27 (CC BY-SA 4.0)。録音がまだない単語には🔊ボタンがありません。");
 
 // 회화
 const T_JA = { "🏪 편의점":"🏪 コンビニ", "🍜 식당":"🍜 食堂", "🚉 역":"🚉 駅", "💼 아르바이트 면접":"💼 バイトの面接" };
