@@ -47,6 +47,16 @@
   .lis-list .phrase.on { border-color:var(--accent); }
   .lis-credit { font-size:.8rem; color:var(--muted); margin-top:18px; line-height:1.6; }
   .lis-credit a { color:inherit; }
+  .seg { display:flex; gap:6px; margin-bottom:14px; }
+  .seg button { flex:1; padding:10px; border:1px solid var(--line); background:var(--card); color:var(--text); border-radius:10px; font-size:1rem; cursor:pointer; }
+  .seg button[aria-pressed="true"] { border-color:var(--accent); color:var(--accent); font-weight:600; }
+  .pod-show { margin:18px 0 6px; font-weight:600; }
+  .pod-show small { font-weight:400; color:var(--muted); }
+  .pod-ep { display:flex; justify-content:space-between; gap:8px; align-items:center; }
+  .pod-ep .dur { color:var(--muted); font-size:.85rem; flex:none; font-variant-numeric:tabular-nums; }
+  .pod-bar { width:100%; margin:12px 0 4px; }
+  .pod-time { display:flex; justify-content:space-between; color:var(--muted); font-size:.85rem; font-variant-numeric:tabular-nums; }
+  .pod-cap { min-height:3.2em; margin-top:10px; font-size:1.1rem; }
 </style>
 </head>
 <body>
@@ -80,6 +90,11 @@
   <section id="talk" hidden></section>
 
   <section id="listen" hidden>
+    <div class="seg" role="group" aria-label="듣기 종류">
+      <button id="segShort" aria-pressed="true">💬 짧은 문장</button>
+      <button id="segPod" aria-pressed="false">🎙 긴 회화 · 팟캐스트</button>
+    </div>
+    <div id="lisShort">
     <p class="lis-step" style="margin-top:0">일본 사람이 직접 녹음한 목소리예요 (기계 음성 아님). 재생하고 화면을 꺼도 계속 들려요.</p>
     <div class="lis-now" aria-live="polite">
       <div class="lis-step" id="lisStep">▶ 를 누르면 시작해요</div>
@@ -100,6 +115,28 @@
     </div>
     <div class="lis-list" id="lisList"></div>
     <div class="lis-credit">녹음: <a href="https://tatoeba.org" target="_blank" rel="noopener">Tatoeba</a> 기여자 yomi, lowteq, fal, CVjpn1, CVjpn29 · 문장 CC BY 2.0 FR · 녹음 라이선스는 기여자별로 다르며 각 문장의 Tatoeba 페이지에서 확인할 수 있어요. 한국어 뜻은 이 앱이 다듬었어요.</div>
+    </div>
+
+    <div id="lisPod" hidden>
+      <p class="lis-step" style="margin-top:0">원어민이 진행하는 학습자용 팟캐스트를 바로 틀어 줘요. 화면을 꺼도 계속 나오고, 들은 곳은 기억해 둬요.</p>
+      <div class="lis-now">
+        <div class="lis-step" id="podShow">아래에서 에피소드를 고르세요</div>
+        <div class="ko" id="podTitle" style="font-weight:600">—</div>
+        <div class="pod-cap" id="podCap"></div>
+        <input type="range" class="pod-bar" id="podBar" min="0" max="1000" value="0" aria-label="재생 위치">
+        <div class="pod-time"><span id="podCur">0:00</span><span id="podDur">0:00</span></div>
+      </div>
+      <div class="controls">
+        <button id="podBack" aria-label="10초 뒤로">⏪ 10초</button>
+        <button id="podPlay" class="lis-big">▶ 재생</button>
+        <button id="podFwd" aria-label="10초 앞으로">10초 ⏩</button>
+      </div>
+      <div class="lis-opts">
+        <label>🐢 속도 <select id="podSpd"><option value="0.75">0.75x</option><option value="0.9">0.9x</option><option value="1" selected>1x</option><option value="1.25">1.25x</option></select></label>
+      </div>
+      <div id="podList"></div>
+      <div class="lis-credit">모든 에피소드는 각 팟캐스트의 공식 공개 피드에서 그대로 재생돼요. 저작권은 각 제작자에게 있어요. 대본·단어장은 제작자 페이지(🔗)에서 확인하고, 마음에 들면 제작자를 응원해 주세요.</div>
+    </div>
   </section>
 </main>
 
@@ -252,6 +289,42 @@ const L = [
   [3552893,"yomi","何買ったの？","뭐 샀어?"],
   [3552883,"yomi","何見てるの？","뭐 보고 있어?"],
   [3488166,"lowteq","下がって。","물러서."],
+];
+
+// 팟캐스트: 공식 RSS 피드의 공개 에피소드 [제목, 길이(초), 오디오, 페이지, 자막(VTT)]
+const POD = [
+  { lang:"ja", show:"Japanese Real Conversation (Imari Radio)", note:"두 사람의 자연스러운 대화 · 중급", home:"https://podcasters.spotify.com/pod/show/imari1", eps:[
+    ["#125 일본 전통 가옥 구경 (House Tour)",438,"https://anchor.fm/s/9c6a1d40/podcast/play/115855535/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-1-22%2F418571132-44100-2-2015f0fb063df.m4a","https://podcasters.spotify.com/pod/show/imari1/episodes/125-What-Does-a-Traditional-Japanese-Home-Look-Like---House-Tour-in-Easy-Japanese-e3fe4nf"],
+    ["#124 도쿄 vs 시골, 겨울 마을 산책",741,"https://anchor.fm/s/9c6a1d40/podcast/play/115767314/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-1-20%2F418453953-44100-2-c29869a16998.m4a","https://podcasters.spotify.com/pod/show/imari1/episodes/124-Tokyo-vs-Rural-Japan--A-Winter-Walk-in-My-Village-e3fbeii"],
+    ["#123 일본은 아직 현금 사회일까?",590,"https://anchor.fm/s/9c6a1d40/podcast/play/115661643/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-1-18%2F418311726-44100-2-a8728c588c074.m4a","https://podcasters.spotify.com/pod/show/imari1/episodes/123-Is-Japan-Still-a-Cash-Country--Why-Some-Stores-Are-Going-Back-to-Cash-e3f87cb"],
+    ["#122 일본 병원비, 정말 쌀까?",735,"https://anchor.fm/s/9c6a1d40/podcast/play/115226330/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-1-9%2F417730076-44100-2-5f5513254a747.m4a","https://podcasters.spotify.com/pod/show/imari1/episodes/122-Is-Healthcare-in-Japan-Really-Cheap--My-Hospital-Story-e3equ8q"],
+  ]},
+  { lang:"ja", show:"Nihongo con Teppei (초급)", note:"테페이 씨 혼자 쉬운 일본어로 수다 · 초급", home:"https://nihongoconteppei.com", eps:[
+    ["#1621 「ジムをサボってやったぜぇ〜！」",0,"https://media.blubrry.com/nihongo_con_teppei/nihongoconteppei.com/wp-content/uploads/2026/11/Beginners-con-Teppei1621.mp3","https://nihongoconteppei.com/"],
+    ["#1620 「映画館に行く前と行った後について！」",0,"https://media.blubrry.com/nihongo_con_teppei/nihongoconteppei.com/wp-content/uploads/2026/11/Beginners-con-Teppei1620.mp3","https://nihongoconteppei.com/"],
+    ["#1619 「映画館について！」",0,"https://media.blubrry.com/nihongo_con_teppei/nihongoconteppei.com/wp-content/uploads/2026/11/Beginners-con-Teppei1619.mp3","https://nihongoconteppei.com/"],
+  ]},
+  { lang:"ja", show:"にほんごのたね Nihongo no Tane", note:"유미 씨의 짧은 이야기 · 일본어 자막 있음", home:"https://alittlejapanese.beehiiv.com", eps:[
+    ["173 娘のミュージカル2 (딸의 뮤지컬 2)",272,"https://podcasts.beehiiv.com/01d714bb-f289-4dca-9cb7-7be22fcc65a8/01a19c58-f464-70b3-bc31-f44ddcbe7f48/01a19c59-0729-75dd-9823-eb51c0f8efdb/01a19c59-07c3-75f8-b26d-a1c6f598cb67.mp3","https://alittlejapanese.beehiiv.com/podcast/s/nihongo_no_tane_with_yumi/nihongo_no_tane_173_2_my_daughter_s_musical_2_japanese_immersion_podcast","https://rss.beehiiv.com/podcasts/transcriptions/01a19c59-a5bf-78f9-8538-6c66e7303d2c.vtt"],
+    ["172 娘のミュージカル (딸의 뮤지컬)",269,"https://podcasts.beehiiv.com/01d714bb-f289-4dca-9cb7-7be22fcc65a8/01a19c58-f464-70b3-bc31-f44ddcbe7f48/01a19c59-0bc1-725e-8600-8420ab8db8f9/01a19c59-0c2b-7cde-88a8-fdb5e7bb72eb.mp3","https://alittlejapanese.beehiiv.com/podcast/s/nihongo_no_tane_with_yumi/nihongo_no_tane_172_my_daughter_s_musical_japanese_immersion_podcast","https://rss.beehiiv.com/podcasts/transcriptions/01a19c59-afdb-741a-aa0d-629870199071.vtt"],
+    ["171 ラジオ番組 (라디오 방송)",258,"https://podcasts.beehiiv.com/01d714bb-f289-4dca-9cb7-7be22fcc65a8/01a19c58-f464-70b3-bc31-f44ddcbe7f48/01a19c59-0c72-7de8-acfa-a559abe070cc/01a19c59-0ce5-7de4-88e3-5877f12d9d6a.mp3","https://alittlejapanese.beehiiv.com/podcast/s/nihongo_no_tane_with_yumi/nihongo_no_tane_171_radio_show_japanese_immersion_podcast","https://rss.beehiiv.com/podcasts/transcriptions/01a19c59-acb3-7dad-8fbc-32ddb8277c0a.vtt"],
+    ["170 日本のお風呂 (일본의 목욕)",247,"https://podcasts.beehiiv.com/01d714bb-f289-4dca-9cb7-7be22fcc65a8/01a19c58-f464-70b3-bc31-f44ddcbe7f48/01a19c5a-b945-79e9-8952-d07565f62ba9/01a19c5a-b9da-740b-bf16-d19ddcfc9c3e.mp3","https://alittlejapanese.beehiiv.com/podcast/s/nihongo_no_tane_with_yumi/nihongo_no_tane_170_japanese_bath_japanese_immersion_podcast","https://rss.beehiiv.com/podcasts/transcriptions/01a19c5e-7679-70d7-91a5-9241537fe242.vtt"],
+  ]},
+  { lang:"ko", show:"Talk To Me In 100% Korean", note:"韓国人同士の自然な会話・中上級", home:"https://talktomeinkorean.com", eps:[
+    ["사투리에 대해 어떻게 생각할까요? (方言)",920,"https://traffic.libsyn.com/secure/ttmik100/3._What_do_Koreans_think_about_regional_dialects_____.mp3?dest-id=1890089","https://talktomeinkorean.com"],
+    ["한국의 90년대생 (90年代生まれ)",1141,"https://traffic.libsyn.com/secure/ttmik100/2._Millennials_in_Korea__90.mp3?dest-id=1890089","https://talktomeinkorean.com"],
+    ["결혼은 꼭 해야 하나요? (結婚)",1011,"https://traffic.libsyn.com/secure/ttmik100/1._Do_Koreans_think_marriage_is_a_must________.mp3?dest-id=1890089","https://talktomeinkorean.com"],
+  ]},
+  { lang:"ko", show:"IYAGI (TTMIK)", note:"自然な韓国語の会話・中級", home:"https://talktomeinkorean.com", eps:[
+    ["스트레스 어떻게 풀어요? (ストレス)",574,"https://traffic.libsyn.com/secure/ttmikiyagi/How_Do_You_Deal_With_Stress__-_IYAGI_by_TTMIK.mp3?dest-id=588921","https://talktomeinkorean.com"],
+    ["서점에 가기 (本屋さん)",337,"https://traffic.libsyn.com/secure/ttmikiyagi/Going_to_a_Bookstore_-_IYAGI_by_TTMIK.mp3?dest-id=588921","https://talktomeinkorean.com"],
+    ["노약자석 (優先席)",470,"https://traffic.libsyn.com/secure/ttmikiyagi/Priority_Seating_For_The_Elderly_-_IYAGI_by_TTMIK.mp3?dest-id=588921","https://talktomeinkorean.com"],
+  ]},
+  { lang:"ko", show:"Real-Life Korean Conversations (初級)", note:"短い会話ダイアログ・初級", home:"https://reallifekorean.libsyn.com", eps:[
+    ["Dialogue #1 자기소개 (自己紹介)",134,"https://traffic.libsyn.com/secure/reallifekorean/Real-Life_Conversations_01.mp3?dest-id=1148357","https://reallifekorean.libsyn.com/dialogue-1-self-introductions"],
+    ["Dialogue #2 번호 교환 (連絡先の交換)",130,"https://traffic.libsyn.com/secure/reallifekorean/Real-Life_Conversations_02.mp3?dest-id=1148357","https://reallifekorean.libsyn.com/dialogue-2-exchanging-numbers"],
+    ["Dialogue #3 잘 지냈어요? (元気？)",130,"https://traffic.libsyn.com/secure/reallifekorean/Real-Life_Conversations_03.mp3?dest-id=1148357","https://reallifekorean.libsyn.com/dialogue-3-how-are-you"],
+  ]},
 ];
 const LIS_AUDIO = id => `https://audio.tatoeba.org/sentences/jpn/${id}.mp3`;
 console.assert(W.length === 50 && Object.values(T).every(t => t.length === 10), "데이터 개수 오류");
@@ -409,6 +482,78 @@ if ("mediaSession" in navigator) {
   ms.setActionHandler("nexttrack", () => lisJump(1));
 }
 lisShow();
+
+// ── 긴 회화 · 팟캐스트 ──
+const pod = { el: new Audio(), cur: null, cues: [] };
+pod.el.preload = "metadata";
+const fmt = t => { t = Math.max(0, Math.floor(t || 0)); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`; };
+const podKey = "jp-pod-pos";
+const podPos = () => { try { return JSON.parse(localStorage.getItem(podKey)) || {}; } catch { return {}; } };
+const podSave = () => { if (!pod.cur) return; const m = podPos(); m[pod.cur[2]] = pod.el.currentTime; try { localStorage.setItem(podKey, JSON.stringify(m)); } catch {} };
+function segShow(podOn) {
+  $("segShort").setAttribute("aria-pressed", !podOn); $("segPod").setAttribute("aria-pressed", podOn);
+  $("lisShort").hidden = podOn; $("lisPod").hidden = !podOn;
+}
+$("segShort").onclick = () => segShow(false);
+$("segPod").onclick = () => segShow(true);
+$("podList").innerHTML = POD.map((s, si) =>
+  `<div class="pod-show">${s.lang === "ja" ? "🇯🇵" : "🇰🇷"} ${s.show} <a href="${s.home}" target="_blank" rel="noopener" aria-label="제작자 페이지">🔗</a><br><small>${s.note}</small></div>` +
+  s.eps.map((e, ei) => `<div class="phrase pod-ep" data-s="${si}" data-e="${ei}"><span>${e[0]}</span><span class="dur">${e[1] ? fmt(e[1]) : ""}</span></div>`).join("")
+).join("");
+async function podLoadCues(url) {
+  pod.cues = []; $("podCap").textContent = "";
+  if (!url) return;
+  try {
+    const txt = await (await fetch(url)).text();
+    const sec = h => h.split(":").reverse().reduce((a, v, k) => a + parseFloat(v) * 60 ** k, 0);
+    pod.cues = txt.split(/\r?\n\r?\n/).map(b => {
+      const m = b.match(/([\d:.]+)\s*-->\s*([\d:.]+)[^\n]*\n([\s\S]*)/);
+      return m && [sec(m[1]), sec(m[2]), m[3].replace(/<[^>]+>/g, "").trim()];
+    }).filter(Boolean);
+  } catch { pod.cues = []; }
+}
+function podPick(si, ei) {
+  const s = POD[si], e = s.eps[ei];
+  lis.playing = false; lis.el.pause(); lisShow();
+  pod.cur = e; pod.show = s;
+  pod.el.src = e[2]; pod.el.playbackRate = +$("podSpd").value;
+  const saved = podPos()[e[2]];
+  pod.el.onloadedmetadata = () => { if (saved && saved < pod.el.duration - 5) pod.el.currentTime = saved; pod.el.playbackRate = +$("podSpd").value; };
+  $("podShow").textContent = s.show; $("podTitle").textContent = e[0];
+  document.querySelectorAll(".pod-ep").forEach(p => p.classList.toggle("on", p.dataset.s == si && p.dataset.e == ei));
+  podLoadCues(e[4]);
+  pod.el.play().catch(() => {});
+  if ("mediaSession" in navigator) navigator.mediaSession.metadata = new MediaMetadata({ title: e[0], artist: s.show, album: "🎙 긴 회화 듣기" });
+}
+$("podList").onclick = e => { const p = e.target.closest(".pod-ep"); if (p) podPick(+p.dataset.s, +p.dataset.e); };
+$("podPlay").onclick = () => { if (!pod.cur) return podPick(0, 0); pod.el.paused ? pod.el.play().catch(() => {}) : pod.el.pause(); };
+const podSeek = d => { if (pod.cur) pod.el.currentTime = Math.max(0, pod.el.currentTime + d); };
+$("podBack").onclick = () => podSeek(-10);
+$("podFwd").onclick = () => podSeek(10);
+$("podSpd").onchange = () => pod.el.playbackRate = +$("podSpd").value;
+$("podBar").oninput = () => { if (pod.el.duration) pod.el.currentTime = $("podBar").value / 1000 * pod.el.duration; };
+pod.el.onplay = pod.el.onpause = () => {
+  $("podPlay").textContent = pod.el.paused ? "▶ 재생" : "⏸ 일시정지";
+  if ("mediaSession" in navigator) navigator.mediaSession.playbackState = pod.el.paused ? "paused" : "playing";
+  podSave();
+};
+let podTick = 0;
+pod.el.ontimeupdate = () => {
+  const t = pod.el.currentTime, d = pod.el.duration || (pod.cur && pod.cur[1]) || 0;
+  $("podCur").textContent = fmt(t); $("podDur").textContent = fmt(d);
+  if (d && document.activeElement !== $("podBar")) $("podBar").value = t / d * 1000;
+  const c = pod.cues.find(c => t >= c[0] && t < c[1]); $("podCap").textContent = c ? c[2] : "";
+  if (++podTick % 20 === 0) podSave();
+};
+pod.el.onerror = () => { if (pod.cur) $("podShow").textContent = "⚠ 이 에피소드를 불러오지 못했어요. 🔗 제작자 페이지에서 들어 주세요."; };
+// 잠금화면 버튼: 지금 틀고 있는 쪽(짧은 문장/팟캐스트)을 조작
+if ("mediaSession" in navigator) {
+  const ms = navigator.mediaSession, podOn = () => !$("lisPod").hidden && pod.cur;
+  ms.setActionHandler("play", () => podOn() ? pod.el.play() : lisToggle(true));
+  ms.setActionHandler("pause", () => podOn() ? pod.el.pause() : lisToggle(false));
+  try { ms.setActionHandler("seekbackward", () => podSeek(-10)); ms.setActionHandler("seekforward", () => podSeek(10)); } catch {}
+}
+$("lisPlay").addEventListener("click", () => pod.el.pause());
 
 renderList();
 renderCard();
