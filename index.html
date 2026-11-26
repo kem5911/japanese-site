@@ -3,7 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>일본어 학습</title>
+<title>한일 전철 · 日韓でんしゃ</title>
+<meta name="theme-color" content="#14213d">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=DotGothic16&family=Noto+Sans+KR:wght@400;700;800;900&family=Noto+Sans+JP:wght@400;700;900&display=swap">
 <style>
   :root { --bg:#f6f5f1; --card:#fff; --text:#222; --muted:#777; --accent:#c8374a; --line:#e3e0d8; --done:#e8f3ea; }
   @media (prefers-color-scheme: dark) { :root { --bg:#1b1b1d; --card:#26262a; --text:#eee; --muted:#999; --accent:#ff6b7f; --line:#3a3a3f; --done:#22352a; } }
@@ -11,7 +14,8 @@
   body { margin:0; font-family:system-ui,"Noto Sans KR","Noto Sans JP",sans-serif; background:var(--bg); color:var(--text); }
   header { padding:20px 16px 0; max-width:820px; margin:auto; }
   h1 { margin:0 0 12px; font-size:1.5rem; }
-  nav { display:flex; gap:8px; border-bottom:1px solid var(--line); }
+  nav { display:flex; gap:4px; border-bottom:1px solid var(--line); overflow-x:auto; }
+  nav button { white-space:nowrap; flex:none; }
   nav button { border:0; background:none; padding:10px 14px; font-size:1rem; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; }
   nav button[aria-selected="true"] { color:var(--accent); border-color:var(--accent); font-weight:600; }
   main { max-width:820px; margin:auto; padding:16px; }
@@ -32,21 +36,306 @@
   .phrase { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:6px; }
   .phrase .ko { color:var(--muted); font-size:.95rem; }
   .say { border:0; background:none; cursor:pointer; font-size:1rem; padding:2px 4px; vertical-align:middle; }
+  .modes { display:grid; gap:8px; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); }
+  .modes button, .choices button { text-align:left; padding:14px; border:1px solid var(--line); background:var(--card); color:var(--text); border-radius:10px; cursor:pointer; font:inherit; }
+  .modes button span { display:block; color:var(--muted); font-size:.9rem; margin-top:4px; }
+  .flash.q { min-height:180px; cursor:default; }
+  .choices { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
+  .choices button { text-align:center; font-size:1.1rem; min-height:64px; }
+  .choices button.ok { background:var(--done); border-color:#3a9a55; }
+  .choices button.ng { border-color:var(--accent); color:var(--accent); }
+  .choices button:disabled { cursor:default; }
+  .timer { height:6px; background:var(--line); border-radius:3px; overflow:hidden; margin-bottom:10px; }
+  .timer div { height:100%; background:var(--accent); width:100%; }
+  nav { overflow-x:auto; }
+  #rCv { display:block; width:100%; height:min(68vh,560px); border-radius:14px; background:var(--card); border:1px solid var(--line); touch-action:none; }
+  .choices.emoji button { font-size:2.6rem; min-height:90px; }
+  .big { font-size:2.6rem; font-weight:700; }
+  .hint { margin-top:14px; font-size:1.3rem; color:var(--accent); min-height:1.6em; }
+  .join { display:flex; gap:8px; margin-top:8px; }
+  .join input { flex:1; min-width:0; padding:10px; font-size:1.1rem; border:1px solid var(--line); border-radius:8px; background:var(--card); color:var(--text); }
+  .join button, .emotes button { padding:10px 14px; border:1px solid var(--line); background:var(--card); color:var(--text); border-radius:8px; cursor:pointer; font:inherit; }
+  .ostatus { color:var(--accent); font-weight:600; text-align:center; min-height:1.2em; }
+  .ostatus button { margin:6px 0; padding:8px 12px; border:1px solid var(--line); background:var(--card); color:var(--text); border-radius:8px; font:inherit; cursor:pointer; }
+  .ostatus .code { font-size:2rem; letter-spacing:.2em; display:block; }
+  .emotes { display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-top:10px; }
+  .emotes button { font-size:.9rem; padding:6px 10px; }
+  .bubble { position:fixed; left:50%; top:16px; transform:translateX(-50%); background:var(--card); border:2px solid var(--accent); border-radius:16px; padding:12px 18px; font-size:1.2rem; text-align:center; box-shadow:0 6px 20px #0003; z-index:9; pointer-events:none; }
+  nav button { white-space:nowrap; }
   .rate { display:flex; align-items:center; gap:8px; margin:0 0 10px; color:var(--muted); }
+  .lis-now { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:24px 16px; text-align:center; min-height:190px; display:flex; flex-direction:column; justify-content:center; gap:10px; }
+  .lis-now .jp { font-size:2rem; }
+  .lis-now .ko { font-size:1.15rem; }
+  .lis-step { color:var(--muted); font-size:.9rem; }
+  .lis-big { font-size:1.2rem; padding:12px 28px !important; background:var(--accent) !important; color:#fff !important; border-color:var(--accent) !important; }
+  .lis-opts { display:grid; gap:10px; margin:14px 0; color:var(--muted); }
+  .lis-opts label { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .lis-opts select { font:inherit; padding:4px 6px; border-radius:6px; border:1px solid var(--line); background:var(--card); color:var(--text); }
+  .lis-list { margin-top:16px; }
+  .lis-list .phrase { cursor:pointer; }
+  .lis-list .phrase.on { border-color:var(--accent); }
+  .lis-credit { font-size:.8rem; color:var(--muted); margin-top:18px; line-height:1.6; }
+  .lis-credit a { color:inherit; }
+  .seg { display:flex; gap:6px; margin-bottom:14px; }
+  .seg button { flex:1; padding:10px; border:1px solid var(--line); background:var(--card); color:var(--text); border-radius:10px; font-size:1rem; cursor:pointer; }
+  .seg button[aria-pressed="true"] { border-color:var(--accent); color:var(--accent); font-weight:600; }
+  .pod-show { margin:18px 0 6px; font-weight:600; }
+  .pod-show small { font-weight:400; color:var(--muted); }
+  .pod-ep { display:flex; justify-content:space-between; gap:8px; align-items:center; }
+  .pod-ep .dur { color:var(--muted); font-size:.85rem; flex:none; font-variant-numeric:tabular-nums; }
+  .pod-bar { width:100%; margin:12px 0 4px; }
+  .pod-time { display:flex; justify-content:space-between; color:var(--muted); font-size:.85rem; font-variant-numeric:tabular-nums; }
+  .pod-cap { min-height:3.2em; margin-top:10px; font-size:1.1rem; }
+  .rec-lang { float:right; padding:6px 10px; border:1px solid var(--line); background:var(--card); color:var(--text); border-radius:8px; cursor:pointer; font-size:.9rem; }
+  .rec-hero { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px 16px; text-align:center; }
+  .rec-hero .big { font-size:2.6rem; font-weight:700; color:var(--accent); line-height:1.1; }
+  .rec-hero .sub { color:var(--muted); margin-top:4px; }
+  .rec-today { margin-top:12px; padding:10px; border-radius:10px; background:var(--done); font-size:.95rem; }
+  .rec-today.todo { background:transparent; border:1px dashed var(--accent); }
+  .rec-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-top:10px; }
+  .rec-stat { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px; }
+  .rec-stat b { display:block; font-size:1.4rem; font-variant-numeric:tabular-nums; }
+  .rec-stat span { color:var(--muted); font-size:.85rem; }
+  .cal-head { display:flex; justify-content:space-between; align-items:center; margin:20px 0 6px; }
+  .cal-head button { border:1px solid var(--line); background:var(--card); color:var(--text); border-radius:8px; padding:4px 12px; cursor:pointer; }
+  .cal { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; text-align:center; }
+  .cal div { aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:8px; font-size:.8rem; color:var(--muted); }
+  .cal .dow { aspect-ratio:auto; padding:2px 0; }
+  .cal .d { background:var(--card); border:1px solid var(--line); }
+  .cal .d.on { background:var(--done); color:var(--text); }
+  .cal .d.on::after { content:"🌸"; font-size:1rem; line-height:1; }
+  .cal .d.today { border-color:var(--accent); border-width:2px; }
+  .badges { display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:8px; }
+  .badge { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 6px; text-align:center; font-size:.8rem; }
+  .badge .e { font-size:1.8rem; display:block; }
+  .badge.lock { opacity:.35; filter:grayscale(1); }
+  .badge small { display:block; color:var(--muted); margin-top:2px; }
+  .games-rec .phrase { display:flex; justify-content:space-between; }
+  #toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(160px); background:var(--text); color:var(--bg); padding:12px 18px; border-radius:12px; font-weight:600; transition:transform .3s; z-index:9; max-width:90vw; text-align:center; }
+  #toast.show { transform:translateX(-50%) translateY(0); }
+
+  /* ── 일본 전철 디자인: 역 이름판(駅名標), 차내 안내 화면(LCD), 발차 안내판(発車標), 점자 블록, IC카드, 역 스탬프 ── */
+  :root { --bg:#e7e9ec; --card:#ffffff; --text:#1a1f2b; --muted:#5a6170; --line:#cdd2d9; --done:#e4f4e8;
+    --navy:#14213d; --lcd:#0f1a33; --next:#ff9a1f; --led:#ff8c1a; --ledg:#4be08a; --tenji:#f2c200; --ink:#c8102e;
+    --L-home:#14213d; --L-list:#2fa84f; --L-flash:#e5532d; --L-talk:#1e78d2; --L-listen:#9b5bd1; --L-rec:#ef8a00; --L-game:#00a3a8;
+    --lc:var(--L-list); --accent:var(--L-flash); --fs:1.0625rem;
+    --jpf:"Zen Kaku Gothic New","Noto Sans JP","Noto Sans KR",sans-serif; --dot:"DotGothic16","Noto Sans KR",monospace; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0e1116; --card:#1a1f27; --text:#eef1f6; --muted:#a3abba; --line:#2f3642; --done:#16301f;
+    --navy:#0b1428; --lcd:#08101f; --L-home:#8fa8ff; } }
+  html { font-size:var(--fs); }
+  body { font-family:"Zen Kaku Gothic New","Noto Sans KR","Noto Sans JP",system-ui,sans-serif; line-height:1.55; padding-bottom:calc(86px + env(safe-area-inset-bottom,0px)); }
+  button, select, input { font:inherit; color:inherit; }
+  :focus-visible { outline:3px solid var(--next); outline-offset:2px; }
+  #home { --lc:var(--L-home); } #list { --lc:var(--L-list); } #flash { --lc:var(--L-flash); } #talk { --lc:var(--L-talk); }
+  #listen { --lc:var(--L-listen); } #rec { --lc:var(--L-rec); } #game { --lc:var(--L-game); }
+
+  /* 점자 블록 띠 */
+  .tenji { height:12px; background-color:var(--tenji);
+    background-image:radial-gradient(circle at 6px 6px, #0000003a 2.2px, transparent 2.6px); background-size:12px 12px; }
+
+  /* 머리: 흰 안내판 + 노선 띠 + 점자 블록 */
+  header { max-width:none; padding:0; background:var(--card); }
+  .top { max-width:820px; margin:auto; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;
+    padding:12px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px)); }
+  h1 { margin:0; font-family:var(--jpf); font-size:1.3rem; font-weight:900; letter-spacing:.01em; display:flex; align-items:center; gap:8px; }
+  h1 .lg { width:30px; height:30px; border-radius:7px; background:var(--navy); color:#fff; display:grid; place-items:center; font-size:.8rem; font-weight:900; }
+  h1 small { font-size:.7rem; font-weight:700; color:var(--muted); }
+  .sizer { display:flex; border:2px solid var(--navy); border-radius:8px; overflow:hidden; }
+  .sizer button { border:0; background:none; min-width:40px; min-height:36px; cursor:pointer; font-weight:900; }
+  .sizer button[aria-pressed="true"] { background:var(--navy); color:#fff; }
+  @media (prefers-color-scheme: dark) { .sizer { border-color:var(--text); } .sizer button[aria-pressed="true"] { background:var(--text); color:var(--card); } }
+  .rate { max-width:820px; margin:0 auto; padding:0 max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px)); font-size:.85rem; color:var(--muted); }
+  .rate input { accent-color:var(--L-list); }
+  .stripe { height:8px; background:linear-gradient(90deg,var(--L-list) 0 16.6%,var(--L-flash) 0 33.3%,var(--L-talk) 0 50%,var(--L-listen) 0 66.6%,var(--L-game) 0 83.3%,var(--L-rec) 0); }
+  main { padding:18px max(16px,env(safe-area-inset-left,0px)) 24px; }
+  h2 { font-family:var(--jpf); font-size:1.1rem; font-weight:900; margin:24px 0 10px; display:flex; align-items:center; gap:8px; }
+  h2::before { content:""; width:6px; height:1.2em; border-radius:3px; background:var(--lc); flex:none; }
+
+  /* 역 번호 배지 (예: T 05) */
+  .no { display:inline-grid; place-items:center; width:46px; height:46px; border-radius:9px; border:4px solid var(--c,var(--lc)); background:var(--card);
+    font-weight:900; line-height:1; flex:none; color:var(--text); font-family:var(--jpf); }
+  .no i { font-style:normal; font-size:.62rem; } .no b { font-size:1.05rem; }
+
+  /* 탭 머리: 미니 역 이름판 */
+  .lineh { background:var(--card); border-radius:10px; overflow:hidden; margin-bottom:16px; box-shadow:0 1px 0 var(--line); }
+  .lineh .in { display:flex; align-items:center; gap:12px; padding:12px 14px; }
+  .lineh b.n { display:block; font-size:1.25rem; font-weight:900; font-family:var(--jpf); line-height:1.2; }
+  .lineh small { color:var(--muted); font-size:.8rem; }
+  .lineh .band { height:8px; background:var(--lc); }
+
+  /* 아래 메뉴: 남색 띠, 지금 탭은 역 번호 배지처럼 */
+  nav { position:fixed; left:0; right:0; bottom:0; z-index:20; background:var(--navy); border:0; display:grid; grid-template-columns:repeat(7,1fr); gap:0; overflow:visible;
+    padding:6px max(4px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(4px,env(safe-area-inset-left,0px)); box-shadow:0 -4px 0 var(--tenji); }
+  nav button { display:flex; flex-direction:column; align-items:center; gap:3px; padding:4px 0; min-height:58px; font-size:.7rem; border:0; color:#c9d1e3; white-space:nowrap; background:none; }
+  nav button .i { width:34px; height:34px; border-radius:8px; display:grid; place-items:center; font-size:1.05rem; border:3px solid var(--c); background:#ffffff14; }
+  nav button[aria-selected="true"] { color:#fff; font-weight:700; border:0; }
+  nav button[aria-selected="true"] .i { background:#fff; }
+  nav [data-tab=home] .i { --c:#ffffff; } nav [data-tab=list] .i { --c:var(--L-list); } nav [data-tab=flash] .i { --c:var(--L-flash); } nav [data-tab=talk] .i { --c:var(--L-talk); }
+  nav [data-tab=listen] .i { --c:var(--L-listen); } nav [data-tab=rec] .i { --c:var(--L-rec); } nav [data-tab=game] .i { --c:var(--L-game); }
+
+  /* 홈: 이어서 하기 = 차내 안내 화면 */
+  .cont { display:flex; gap:14px; align-items:center; width:100%; text-align:left; background:var(--lcd); color:#fff; border:0; border-radius:12px; padding:14px 16px 14px 20px; cursor:pointer; position:relative; overflow:hidden; box-shadow:inset 0 0 0 3px #26324d; }
+  .cont::before { content:""; position:absolute; left:0; top:0; bottom:0; width:8px; background:var(--L-flash); }
+  .cont .play { width:46px; height:46px; border-radius:50%; background:var(--next); color:var(--lcd); display:grid; place-items:center; font-size:1.1rem; flex:none; }
+  .cont .nx { display:block; color:var(--next); font-weight:900; font-size:.8rem; letter-spacing:.06em; }
+  .cont b { font-family:var(--jpf); font-weight:900; font-size:1.35rem; display:block; line-height:1.25; }
+  .cont small { color:#b9c4dd; font-size:.85rem; }
+
+  /* 홈: 메뉴 = 발차 안내판 */
+  .board { margin-top:16px; background:#0b0b0b; border-radius:10px; padding:8px 0 0; box-shadow:inset 0 0 0 4px #2b2b2b; overflow:hidden; font-family:var(--dot); }
+  .board .bh { display:grid; grid-template-columns:62px 1fr 44px; gap:8px; padding:4px 14px 6px; color:#9aa0aa; font-size:.7rem; border-bottom:1px solid #333; font-family:var(--jpf); }
+  .board .row { display:grid; grid-template-columns:62px 1fr 44px; gap:8px; align-items:center; width:100%; text-align:left; background:none; border:0; border-bottom:1px solid #222; padding:10px 14px; cursor:pointer; color:var(--led); }
+  .board .row:active { background:#1b1b1b; }
+  .board .kind { font-family:var(--jpf); font-weight:900; font-size:.8rem; text-align:center; padding:3px 0; border-radius:4px; color:#fff; background:var(--c); }
+  .board .dest b { display:block; font-family:var(--dot),"Noto Sans KR"; font-size:1.15rem; font-weight:400; color:var(--led); line-height:1.25; }
+  .board .dest small { color:var(--ledg); font-size:.75rem; }
+  .board .pl { text-align:center; font-size:1.3rem; color:#fff; }
+  .board .pl small { display:block; font-size:.6rem; color:#9aa0aa; font-family:var(--jpf); }
+  .ticker { overflow:hidden; white-space:nowrap; color:var(--ledg); padding:8px 0; font-size:.9rem; border-top:1px solid #333; }
+  .ticker span { display:inline-block; padding-left:100%; animation:tick 22s linear infinite; }
+  @keyframes tick { to { transform:translateX(-100%); } }
+  .tiles { display:none; }
+
+  /* 홈: 오늘의 단어 = 역 이름판 */
+  .eki { background:var(--card); border-radius:10px; overflow:hidden; box-shadow:0 1px 0 var(--line), 0 0 0 1px var(--line); }
+  .eki .top2 { display:flex; align-items:center; gap:12px; padding:16px 16px 8px; position:relative; }
+  .eki .nm { flex:1; text-align:center; min-width:0; }
+  .eki .kj { font-family:var(--jpf); font-weight:900; font-size:2.8rem; line-height:1.1; letter-spacing:.08em; }
+  .eki .kn { font-family:var(--jpf); font-weight:700; font-size:1.05rem; }
+  .eki .ro { font-family:"Inter","Noto Sans KR",sans-serif; font-size:.85rem; color:var(--muted); letter-spacing:.05em; }
+  .eki .ko { display:inline-block; margin-top:6px; border:2px solid var(--L-list); border-radius:6px; padding:0 10px; font-weight:900; }
+  .eki .say { width:48px; height:48px; border-radius:50%; background:var(--L-list); color:#fff; border:0; font-size:1.2rem; flex:none; }
+  .eki .band { display:flex; justify-content:space-between; background:var(--L-list); color:#fff; font-weight:900; padding:4px 12px; font-size:1.05rem; }
+  .eki .pn { display:flex; justify-content:space-between; gap:10px; padding:6px 12px 10px; font-size:.85rem; }
+  .eki .pn span { min-width:0; } .eki .pn span:last-child { text-align:right; }
+  .eki .pn b { font-family:var(--jpf); display:block; } .eki .pn small { color:var(--muted); }
+
+  /* 단어장 = 노선도. 역(동그라미) 옆에 역 번호 */
+  .bar { color:var(--muted); font-weight:700; }
+  .bar input[type=checkbox], .lis-opts input[type=checkbox] { width:20px; height:20px; accent-color:var(--lc); }
+  #words { position:relative; counter-reset:st; }
+  #words::before { content:""; position:absolute; left:22px; top:10px; bottom:10px; width:8px; border-radius:4px; background:var(--lc); }
+  .word { position:relative; counter-increment:st; background:var(--card); border:0; border-radius:10px; padding:14px 60px 14px 6px; margin:0 0 8px; box-shadow:0 1px 0 var(--line); align-items:center; }
+  .word::after { content:"T" counter(st, decimal-leading-zero); position:absolute; right:10px; top:12px; border:3px solid var(--lc); border-radius:7px; padding:1px 5px; font-weight:900; font-size:.75rem; background:var(--card); }
+  .word.done { background:var(--done); }
+  .word input { appearance:none; -webkit-appearance:none; width:36px; height:36px; margin:0; border-radius:50%; border:7px solid var(--lc); background:var(--card); position:relative; z-index:1; cursor:pointer; flex:none; }
+  .word input:checked { background:var(--lc); box-shadow:inset 0 0 0 4px var(--card); }
+  .jp { font-family:var(--jpf); font-size:1.45rem; font-weight:900; }
+  .yomi { font-weight:700; }
+
+  /* 카드 = 차내 안내 화면 */
+  .flash { background:var(--lcd); color:#fff; border:0; border-radius:12px; min-height:300px; position:relative; overflow:hidden; padding:52px 20px 48px; box-shadow:inset 0 0 0 4px #26324d; }
+  .flash::before { content:"次は  つぎは  다음은  Next"; position:absolute; left:0; right:0; top:0; padding:8px 14px; text-align:left; background:#00000055; color:var(--next); font-weight:900; font-size:.85rem; letter-spacing:.06em; border-left:8px solid var(--lc); }
+  .flash::after { content:"◀◀  こちら側のドアが開きます · 이쪽 문이 열립니다"; position:absolute; left:0; right:0; bottom:0; padding:7px; background:#1c2a4a; color:var(--ledg); font-weight:700; font-size:.75rem; }
+  .flash .jp { font-size:3.2rem; color:#fff; }
+  .flash .ex, .flash .back .ex { color:#b9c4dd; }
+  .flash.q::before { content:"もんだい · 문제 · Question"; }
+  .flash.q::after { content:""; padding:0; }
+  .controls button, .bar button, .seg button, .cal-head button, .rec-lang, .join button, .ostatus button, .emotes button { min-height:48px; padding:8px 18px; border:2px solid var(--navy); background:var(--card); color:var(--text); border-radius:8px; font-weight:900; cursor:pointer; box-shadow:0 3px 0 var(--navy); }
+  @media (prefers-color-scheme: dark) { .controls button, .bar button, .seg button, .cal-head button, .rec-lang, .join button { border-color:var(--muted); box-shadow:0 3px 0 var(--muted); } }
+  .controls button:active, .seg button:active, .choices button:active, .modes button:active { transform:translateY(2px); box-shadow:0 1px 0 var(--navy); }
+  .lis-big { background:var(--lc) !important; color:#fff !important; border-color:var(--lc) !important; font-size:1.15rem; }
+  .seg button[aria-pressed="true"] { background:var(--navy); color:#fff; }
+
+  /* 회화 */
+  .phrase { background:var(--card); border:0; border-left:6px solid var(--lc); border-radius:8px; padding:12px 14px; margin-bottom:8px; box-shadow:0 1px 0 var(--line); }
+  .phrase > div:first-child { font-family:var(--jpf); font-weight:700; }
+  .lis-list .phrase.on { background:var(--done); }
+  .say { font-size:1.1rem; min-width:40px; min-height:40px; }
+
+  /* 듣기 = 발차 안내판 */
+  .lis-now { background:#0b0b0b; color:#fff; border:0; border-radius:10px; box-shadow:inset 0 0 0 4px #2b2b2b; }
+  .lis-now .jp { color:var(--led); font-family:var(--dot); font-weight:400; }
+  .lis-now .ko { color:var(--ledg); }
+  .lis-now .lis-step, .lis-now .pod-time { color:#9aa0aa; }
+  .lis-opts select { border:2px solid var(--navy); border-radius:8px; min-height:40px; background:var(--card); }
+
+  /* 기록 = IC카드 + 역 스탬프 */
+  .rec-hero { clear:both; border:0; border-radius:16px; color:#fff; text-align:left; padding:20px 18px; position:relative; overflow:hidden;
+    background:linear-gradient(120deg,#0f8f6a 0%,#2fa84f 45%,#9bd36a 100%); box-shadow:0 3px 0 var(--line); }
+  .rec-hero::before { content:""; position:absolute; right:18px; top:18px; width:42px; height:32px; border-radius:6px; background:linear-gradient(135deg,#f6dd8a,#c9a43b); box-shadow:inset 0 0 0 2px #a98320; }
+  .rec-hero::after { content:"KJ PASS  ⇄  日韓パス"; position:absolute; left:18px; bottom:10px; font-size:.68rem; font-weight:900; letter-spacing:.14em; opacity:.85; }
+  .rec-hero .big { color:#fff; font-weight:900; font-family:var(--jpf); }
+  .rec-hero .sub { color:#eafff0; }
+  .rec-today { background:#ffffff2e; color:#fff; border-radius:8px; margin-bottom:18px; }
+  .rec-today.todo { border:2px dashed #fff; background:transparent; }
+  .rec-stat { border:0; border-top:6px solid var(--lc); border-radius:8px; }
+  .cal { grid-template-columns:repeat(7,minmax(0,1fr)); }
+  .cal .d { border:0; border-radius:8px; box-shadow:inset 0 0 0 1.5px var(--line); }
+  .cal .d.on { background:var(--card); color:var(--ink); font-weight:900; box-shadow:inset 0 0 0 3px var(--ink); border-radius:50%; transform:rotate(-8deg); }
+  .cal .d.on::after { content:"着"; font-size:.7rem; line-height:1; font-family:var(--jpf); }
+  .cal .d.today { box-shadow:inset 0 0 0 3px var(--text); }
+  .badge { border:3px double var(--ink); border-radius:50%; aspect-ratio:1; display:flex; flex-direction:column; justify-content:center; color:var(--ink); background:var(--card); font-weight:700; padding:6px; }
+  .badge small { color:var(--muted); }
+  .badge.lock { border-color:var(--muted); color:var(--muted); }
+
+  /* 게임: 모드 = 승차권, 보기 = 발매기 버튼 */
+  .modes button { position:relative; border:0; border-radius:6px; padding:14px 14px 14px 26px; color:#2b3a2f;
+    background-color:#e6f2e9; background-image:repeating-linear-gradient(135deg,#d5e9db 0 2px,transparent 2px 7px);
+    box-shadow:0 2px 0 #b7cdbd; }
+  .modes button::before { content:""; position:absolute; left:10px; top:8px; bottom:8px; border-left:2px dashed #93ad9a; }
+  .modes button b { font-family:var(--jpf); }
+  .modes button span { color:#4b5d50; }
+  .choices button { border:2px solid var(--navy); border-radius:10px; box-shadow:0 3px 0 var(--navy); background:var(--card); }
+  .choices button.ok { background:var(--done); border-color:var(--L-list); }
+  .choices button.ng { border-color:var(--ink); color:var(--ink); }
+  .timer div { background:var(--next); }
+  #rCv { border:0; border-radius:12px; }
+  .join input { border:2px solid var(--navy); border-radius:8px; }
+  #toast { bottom:calc(98px + env(safe-area-inset-bottom,0px)); border-radius:10px; background:var(--lcd); color:var(--next); border:2px solid var(--next); }
+  @media (min-width:700px) { nav { max-width:720px; margin:auto; bottom:12px; border-radius:14px; } }
+  @media (prefers-reduced-motion:reduce) { * { transition:none !important; } .ticker span { animation:none; padding-left:14px; } }
+
+  /* 게임하는 동안: 위·아래 메뉴를 숨기고 게임만 크게 */
+  [hidden] { display:none !important; }
+  body.playing { padding-bottom:0; }
+  body.playing #rCv { height:min(78vh,640px); }
+  body.playing header, body.playing nav, body.playing #game > .lineh { display:none; }
+  body.playing main { padding-top:max(12px, env(safe-area-inset-top,0px)); }
+  .gexit { display:none; }
+  body.playing .gexit { display:inline-flex; align-items:center; gap:6px; margin:0 0 10px auto; min-height:44px; padding:6px 14px; border:2px solid var(--navy); background:var(--card); color:var(--text); border-radius:8px; font-weight:900; cursor:pointer; }
+  body.playing #game { display:flex; flex-direction:column; }
+  @media (prefers-color-scheme: dark) { body.playing .gexit { border-color:var(--muted); } }
 </style>
 </head>
 <body>
 <header>
-  <h1>🇯🇵 일본어 학습 (JLPT N3~N2)</h1>
+  <div class="top">
+    <h1><span class="lg">KJ</span><span>한일 전철<br><small>日韓でんしゃ · KJ Line</small></span></h1>
+    <div class="tools">
+      <div class="sizer" role="group" aria-label="글자 크기 · 文字サイズ">
+        <button data-fs="1" aria-pressed="false" aria-label="보통 글자">가</button>
+        <button data-fs="1.0625" aria-pressed="true" aria-label="큰 글자" style="font-size:1.12em">가</button>
+        <button data-fs="1.25" aria-pressed="false" aria-label="아주 큰 글자" style="font-size:1.3em">가</button>
+      </div>
+    </div>
+  </div>
   <label class="rate">🔊 읽기 속도 <input type="range" id="rate" min="0.5" max="1.5" step="0.1" value="1"> <span id="rateVal">1.0x</span></label>
-  <nav role="tablist">
-    <button role="tab" aria-selected="true" data-tab="list">단어장</button>
-    <button role="tab" aria-selected="false" data-tab="flash">플래시카드</button>
-    <button role="tab" aria-selected="false" data-tab="talk">실생활 회화</button>
+  <nav role="tablist" aria-label="메뉴">
+    <button role="tab" aria-selected="true" data-tab="home"><span class="i">🏠</span>홈</button>
+    <button role="tab" aria-selected="false" data-tab="list"><span class="i">📖</span>단어장</button>
+    <button role="tab" aria-selected="false" data-tab="flash"><span class="i">🃏</span>카드</button>
+    <button role="tab" aria-selected="false" data-tab="talk"><span class="i">💬</span>회화</button>
+    <button role="tab" aria-selected="false" data-tab="listen"><span class="i">🎧</span>듣기</button>
+    <button role="tab" aria-selected="false" data-tab="rec"><span class="i">🏆</span>기록</button>
+    <button role="tab" aria-selected="false" data-tab="game"><span class="i">🎮</span>게임</button>
   </nav>
 </header>
 <main>
-  <section id="list">
+  <section id="home">
+    <button class="cont" id="cont"><span class="play" aria-hidden="true">▶</span><span><b id="contT">시작하기</b><small id="contS">단어장부터 차근차근 시작해요</small></span></button>
+    <div class="tiles">
+      <button class="tile t-list" data-go="list"><span class="i">📖</span><span><b>단어장</b><small id="tileList">50개 단어</small></span></button>
+      <button class="tile t-flash" data-go="flash"><span class="i">🃏</span><span><b>카드</b><small>뒤집어서 뜻 확인</small></span></button>
+      <button class="tile t-talk" data-go="talk"><span class="i">💬</span><span><b>회화</b><small>편의점·식당·역·면접</small></span></button>
+      <button class="tile t-listen" data-go="listen"><span class="i">🎧</span><span><b>듣기</b><small>화면 꺼도 들려요</small></span></button>
+      <button class="tile t-game" data-go="game" id="tileGame" hidden><span class="i">🎮</span><span><b>게임</b><small>몰라도 OK, 친구랑 대결</small></span></button>
+      <button class="tile t-rec" data-go="rec"><span class="i">🏆</span><span><b>기록</b><small id="tileRec">출석·배지</small></span></button>
+    </div>
+    <h2>오늘의 단어</h2>
+    <div class="today" id="today"></div>
+  </section>
+  <section id="list" hidden>
     <div class="bar"><span id="count"></span><label><input type="checkbox" id="hideDone"> 외운 단어 숨기기</label></div>
     <div id="words"></div>
   </section>
@@ -63,7 +352,131 @@
   </section>
 
   <section id="talk" hidden></section>
+
+  <section id="listen" hidden>
+    <div class="seg" role="group" aria-label="듣기 종류">
+      <button id="segShort" aria-pressed="true">💬 짧은 문장</button>
+      <button id="segPod" aria-pressed="false">🎙 긴 회화 · 팟캐스트</button>
+    </div>
+    <div id="lisShort">
+    <p class="lis-step" style="margin-top:0">일본 사람이 직접 녹음한 목소리예요 (기계 음성 아님). 재생하고 화면을 꺼도 계속 들려요.</p>
+    <div class="lis-now" aria-live="polite">
+      <div class="lis-step" id="lisStep">▶ 를 누르면 시작해요</div>
+      <div class="jp" id="lisJp">本当？</div>
+      <div class="ko" id="lisKo">정말이야?</div>
+    </div>
+    <div class="controls">
+      <button id="lisPrev" aria-label="이전 문장">⏮</button>
+      <button id="lisPlay" class="lis-big">▶ 재생</button>
+      <button id="lisNext" aria-label="다음 문장">⏭</button>
+    </div>
+    <div class="lis-opts">
+      <label>🔁 한 문장 반복 <select id="lisRep"><option value="1">1번</option><option value="2" selected>2번</option><option value="3">3번</option></select></label>
+      <label>🗣 따라 말할 틈 <select id="lisGap"><option value="1">짧게 (1초)</option><option value="2.5" selected>보통 (2.5초)</option><option value="4">길게 (4초)</option></select></label>
+      <label>🐢 속도 <select id="lisSpd"><option value="0.75">0.75x</option><option value="0.9">0.9x</option><option value="1" selected>1x</option></select></label>
+      <label><input type="checkbox" id="lisShuf"> 🔀 순서 섞기</label>
+      <label><input type="checkbox" id="lisHide"> 🙈 뜻 가리기 (들리는 대로 맞혀 보기)</label>
+    </div>
+    <div class="lis-list" id="lisList"></div>
+    <div class="lis-credit">녹음: <a href="https://tatoeba.org" target="_blank" rel="noopener">Tatoeba</a> 기여자 yomi, lowteq, fal, CVjpn1, CVjpn29 · 문장 CC BY 2.0 FR · 녹음 라이선스는 기여자별로 다르며 각 문장의 Tatoeba 페이지에서 확인할 수 있어요. 한국어 뜻은 이 앱이 다듬었어요.</div>
+    </div>
+
+    <div id="lisPod" hidden>
+      <p class="lis-step" style="margin-top:0">원어민이 진행하는 학습자용 팟캐스트를 바로 틀어 줘요. 화면을 꺼도 계속 나오고, 들은 곳은 기억해 둬요.</p>
+      <div class="lis-now">
+        <div class="lis-step" id="podShow">아래에서 에피소드를 고르세요</div>
+        <div class="ko" id="podTitle" style="font-weight:600">—</div>
+        <div class="pod-cap" id="podCap"></div>
+        <input type="range" class="pod-bar" id="podBar" min="0" max="1000" value="0" aria-label="재생 위치">
+        <div class="pod-time"><span id="podCur">0:00</span><span id="podDur">0:00</span></div>
+      </div>
+      <div class="controls">
+        <button id="podBack" aria-label="10초 뒤로">⏪ 10초</button>
+        <button id="podPlay" class="lis-big">▶ 재생</button>
+        <button id="podFwd" aria-label="10초 앞으로">10초 ⏩</button>
+      </div>
+      <div class="lis-opts">
+        <label>🐢 속도 <select id="podSpd"><option value="0.75">0.75x</option><option value="0.9">0.9x</option><option value="1" selected>1x</option><option value="1.25">1.25x</option></select></label>
+      </div>
+      <div id="podList"></div>
+      <div class="lis-credit">모든 에피소드는 각 팟캐스트의 공식 공개 피드에서 그대로 재생돼요. 저작권은 각 제작자에게 있어요. 대본·단어장은 제작자 페이지(🔗)에서 확인하고, 마음에 들면 제작자를 응원해 주세요.</div>
+    </div>
+  </section>
+
+  <section id="rec" hidden></section>
+  <section id="game" hidden>
+    <button class="gexit" id="gExit">✕ 게임 나가기 · やめる</button>
+    <div id="gSetup">
+      <h2>🏃 갈림길 러너 · 分かれ道ランナー</h2>
+      <p class="ex">맞는 뜻의 문으로 달려가면 친구들이 늘어나요! 틀리면 줄어들어요. 좌우로 밀거나 ←→ 키.<br>正しい意味のゲートを通ると仲間が増える！間違えると減るよ。左右にスワイプか←→キー。</p>
+      <div class="modes">
+        <button data-run="ko.easy"><b>🇰🇷 쉬움 · 그림</b><span>일본어 몰라도 OK</span></button>
+        <button data-run="ko.normal"><b>🇰🇷 보통 · 단어</b><span>JLPT 단어 뜻 고르기</span></button>
+        <button data-run="ja.easy"><b>🇯🇵 かんたん・絵</b><span>韓国語を知らなくてもOK</span></button>
+        <button data-run="ja.normal"><b>🇯🇵 ふつう・単語</b><span>韓国語の意味を選ぶ</span></button>
+      </div>
+      <p class="ex" id="rBest"></p>
+      <h2>🎯 친구랑 내기 · 友達と勝負</h2>
+      <p class="ex">일본어를 하나도 몰라도 OK! 소리를 듣고 그림을 골라요. 기록을 친구에게 보내 내기해 보세요.<br>韓国語をまったく知らなくてもOK！音を聞いて絵を選ぼう。記録を友達に送って勝負！</p>
+      <div id="cInvite" class="ostatus" hidden></div>
+      <div class="modes">
+        <button data-ch="ko"><b>🇰🇷 일본어 소리 맞히기</b><span>몰라도 맞히는 일본어 10문제</span></button>
+        <button data-ch="ja"><b>🇯🇵 韓国語の音あてクイズ</b><span>知らなくても分かる韓国語10問</span></button>
+      </div>
+      <h2>🇰🇷 한·일 단어 대결 🇯🇵 日韓単語バトル</h2>
+      <p class="ex">10초 안에 뜻을 골라요. 빨리 맞힐수록 점수가 높아요.<br>10秒以内に意味を選んでください。早く当てるほど高得点！</p>
+      <div class="modes">
+        <button data-mode="ko"><b>🇰🇷 혼자 하기</b><span>일본어 단어 → 한국어 뜻</span></button>
+        <button data-mode="ja"><b>🇯🇵 ひとりで</b><span>韓国語の単語 → 日本語の意味</span></button>
+        <button data-mode="duel"><b>👥 둘이서 · ふたりで</b><span>한국인 vs 일본인, 번갈아 5문제씩<br>韓国人 vs 日本人、交代で5問ずつ</span></button>
+      </div>
+      <h2>🌏 온라인 대결 · オンライン対戦</h2>
+      <p class="ex">한국인과 일본인이 각자 폰으로 같은 단어를 동시에 풀어요. 방을 만들고 코드를 친구에게 보내 주세요.<br>韓国人と日本人がそれぞれのスマホで同じ単語を同時に解きます。部屋を作ってコードを友達に送ってください。</p>
+      <div class="modes">
+        <button data-host="ko"><b>🇰🇷 방 만들기</b><span>나는 한국어 사용자</span></button>
+        <button data-host="ja"><b>🇯🇵 部屋を作る</b><span>私は日本語ユーザー</span></button>
+      </div>
+      <div class="join"><input id="oCode" inputmode="numeric" maxlength="4" placeholder="코드 · コード (4자리)"><button id="oJoin">참가 · 参加</button></div>
+      <p id="oStatus" class="ostatus" aria-live="polite"></p>
+      <p class="ex" id="gBest"></p>
+    </div>
+    <div id="gPlay" hidden>
+      <div class="bar"><span id="gTurn"></span><span id="gScore"></span></div>
+      <div class="timer"><div id="gTime"></div></div>
+      <div class="flash q" id="gQ"></div>
+      <div class="choices" id="gChoices"></div>
+      <p id="oOpp" class="ostatus" hidden></p>
+      <div class="emotes" id="oEmotes" hidden></div>
+      <div class="controls"><button id="gNext" hidden>다음 ▶ 次へ</button><button id="gQuit">그만하기 · やめる</button></div>
+    </div>
+    <div id="rPlay" hidden>
+      <canvas id="rCv" aria-label="러너 게임 · ランナーゲーム"></canvas>
+      <div class="controls"><button id="rQuit">그만하기 · やめる</button></div>
+    </div>
+    <div id="rEnd" hidden>
+      <div class="flash" id="rResult"></div>
+      <div class="controls"><button id="rAgain">🔁 다시 · もう一度</button><button id="rMenu">메뉴 · メニュー</button></div>
+      <h2 id="rLearnedT"></h2>
+      <div id="rLearned"></div>
+    </div>
+    <div id="cPlay" hidden>
+      <div class="bar"><span id="cPos"></span><span id="cClock">0.0초</span></div>
+      <div class="flash q" id="cQ"></div>
+      <div class="choices emoji" id="cChoices"></div>
+    </div>
+    <div id="cEnd" hidden>
+      <div class="flash" id="cResult"></div>
+      <div class="controls"><button id="cShare">📨 친구에게 도전장 · 友達に挑戦状</button><button id="cAgain">🔁 다시 · もう一度</button><button id="cMenu">메뉴 · メニュー</button></div>
+      <h2 id="cLearnedT"></h2>
+      <div id="cLearned"></div>
+    </div>
+    <div id="gEnd" hidden>
+      <div class="flash" id="gResult"></div>
+      <div class="controls"><button id="gAgain">🔁 다시 · もう一度</button><button id="gMenu">메뉴 · メニュー</button></div>
+    </div>
+  </section>
 </main>
+<div id="toast" role="status" aria-live="polite"></div>
 
 <script>
 const W = [
@@ -169,6 +582,89 @@ const T = {
     ["ありがとうございました。失礼いたします。","감사합니다. 실례하겠습니다."],
   ],
 };
+
+// 듣기 모드: Tatoeba 원어민 녹음 [문장ID, 녹음자, 일본어, 한국어]
+const L = [
+  [4751,"yomi","本当？","정말이야?"],
+  [13193964,"fal","怖い。","무서워."],
+  [7551811,"lowteq","痛い。","아파."],
+  [2303034,"yomi","何の話？","무슨 얘기야?"],
+  [778974,"yomi","なんで？","왜?"],
+  [370955,"yomi","何これ？","이거 뭐야?"],
+  [236985,"CVjpn1","嘘だろ？","거짓말이지?"],
+  [142537,"yomi","静かに！","조용히 해!"],
+  [102315,"lowteq","彼は誰？","그 사람 누구야?"],
+  [5183,"lowteq","寒い。","추워."],
+  [4754,"yomi","急いで！","서둘러!"],
+  [10904986,"CVjpn1","すっげー！","대박!"],
+  [8533908,"CVjpn1","どうぞ。","여기요. / 드세요."],
+  [6865714,"CVjpn1","どうも。","고마워요. / 안녕하세요."],
+  [3710861,"yomi","あ、雪だ！","아, 눈이다!"],
+  [3590724,"yomi","頭痛い。","머리 아파."],
+  [3550819,"yomi","今の音何？","방금 무슨 소리야?"],
+  [3480386,"lowteq","教えて。","알려 줘."],
+  [2666712,"yomi","寝てるの？","자고 있어?"],
+  [2556043,"lowteq","やった。","해냈다! / 앗싸!"],
+  [1167794,"lowteq","見せて。","보여 줘."],
+  [509771,"CVjpn29","いいえ。","아니요."],
+  [145180,"yomi","新聞どこ？","신문 어딨어?"],
+  [4739,"lowteq","行くよ。","간다. / 가자."],
+  [13563757,"fal","立ち上がれ！","일어서!"],
+  [13549381,"fal","お疲れ様。","수고했어."],
+  [13536221,"fal","行く？","갈래?"],
+  [13536216,"fal","先生です。","선생님이에요."],
+  [13523695,"fal","電話して。","전화해 줘."],
+  [12296500,"fal","怖かった。","무서웠어."],
+  [10906691,"CVjpn1","今何してる？","지금 뭐 해?"],
+  [10906678,"CVjpn1","じゃあな。","잘 가. / 또 봐."],
+  [10906677,"CVjpn1","惜しいな。","아깝다."],
+  [10904979,"CVjpn1","バイバイ。","바이바이."],
+  [10901725,"CVjpn1","駄目です。","안 돼요."],
+  [5955911,"lowteq","わかった。","알았어."],
+  [3878008,"yomi","手伝おうか？","도와줄까?"],
+  [3700808,"yomi","これトムの？","이거 톰 거야?"],
+  [3595435,"yomi","どこ行くの？","어디 가?"],
+  [3552893,"yomi","何買ったの？","뭐 샀어?"],
+  [3552883,"yomi","何見てるの？","뭐 보고 있어?"],
+  [3488166,"lowteq","下がって。","물러서."],
+];
+
+// 팟캐스트: 공식 RSS 피드의 공개 에피소드 [제목, 길이(초), 오디오, 페이지, 자막(VTT)]
+const POD = [
+  { lang:"ja", show:"Japanese Real Conversation (Imari Radio)", note:"두 사람의 자연스러운 대화 · 중급", home:"https://podcasters.spotify.com/pod/show/imari1", eps:[
+    ["#125 일본 전통 가옥 구경 (House Tour)",438,"https://anchor.fm/s/9c6a1d40/podcast/play/115855535/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-1-22%2F418571132-44100-2-2015f0fb063df.m4a","https://podcasters.spotify.com/pod/show/imari1/episodes/125-What-Does-a-Traditional-Japanese-Home-Look-Like---House-Tour-in-Easy-Japanese-e3fe4nf"],
+    ["#124 도쿄 vs 시골, 겨울 마을 산책",741,"https://anchor.fm/s/9c6a1d40/podcast/play/115767314/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-1-20%2F418453953-44100-2-c29869a16998.m4a","https://podcasters.spotify.com/pod/show/imari1/episodes/124-Tokyo-vs-Rural-Japan--A-Winter-Walk-in-My-Village-e3fbeii"],
+    ["#123 일본은 아직 현금 사회일까?",590,"https://anchor.fm/s/9c6a1d40/podcast/play/115661643/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-1-18%2F418311726-44100-2-a8728c588c074.m4a","https://podcasters.spotify.com/pod/show/imari1/episodes/123-Is-Japan-Still-a-Cash-Country--Why-Some-Stores-Are-Going-Back-to-Cash-e3f87cb"],
+    ["#122 일본 병원비, 정말 쌀까?",735,"https://anchor.fm/s/9c6a1d40/podcast/play/115226330/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-1-9%2F417730076-44100-2-5f5513254a747.m4a","https://podcasters.spotify.com/pod/show/imari1/episodes/122-Is-Healthcare-in-Japan-Really-Cheap--My-Hospital-Story-e3equ8q"],
+  ]},
+  { lang:"ja", show:"Nihongo con Teppei (초급)", note:"테페이 씨 혼자 쉬운 일본어로 수다 · 초급", home:"https://nihongoconteppei.com", eps:[
+    ["#1621 「ジムをサボってやったぜぇ〜！」",0,"https://media.blubrry.com/nihongo_con_teppei/nihongoconteppei.com/wp-content/uploads/2026/11/Beginners-con-Teppei1621.mp3","https://nihongoconteppei.com/"],
+    ["#1620 「映画館に行く前と行った後について！」",0,"https://media.blubrry.com/nihongo_con_teppei/nihongoconteppei.com/wp-content/uploads/2026/11/Beginners-con-Teppei1620.mp3","https://nihongoconteppei.com/"],
+    ["#1619 「映画館について！」",0,"https://media.blubrry.com/nihongo_con_teppei/nihongoconteppei.com/wp-content/uploads/2026/11/Beginners-con-Teppei1619.mp3","https://nihongoconteppei.com/"],
+  ]},
+  { lang:"ja", show:"にほんごのたね Nihongo no Tane", note:"유미 씨의 짧은 이야기 · 일본어 자막 있음", home:"https://alittlejapanese.beehiiv.com", eps:[
+    ["173 娘のミュージカル2 (딸의 뮤지컬 2)",272,"https://podcasts.beehiiv.com/01d714bb-f289-4dca-9cb7-7be22fcc65a8/01a19c58-f464-70b3-bc31-f44ddcbe7f48/01a19c59-0729-75dd-9823-eb51c0f8efdb/01a19c59-07c3-75f8-b26d-a1c6f598cb67.mp3","https://alittlejapanese.beehiiv.com/podcast/s/nihongo_no_tane_with_yumi/nihongo_no_tane_173_2_my_daughter_s_musical_2_japanese_immersion_podcast","https://rss.beehiiv.com/podcasts/transcriptions/01a19c59-a5bf-78f9-8538-6c66e7303d2c.vtt"],
+    ["172 娘のミュージカル (딸의 뮤지컬)",269,"https://podcasts.beehiiv.com/01d714bb-f289-4dca-9cb7-7be22fcc65a8/01a19c58-f464-70b3-bc31-f44ddcbe7f48/01a19c59-0bc1-725e-8600-8420ab8db8f9/01a19c59-0c2b-7cde-88a8-fdb5e7bb72eb.mp3","https://alittlejapanese.beehiiv.com/podcast/s/nihongo_no_tane_with_yumi/nihongo_no_tane_172_my_daughter_s_musical_japanese_immersion_podcast","https://rss.beehiiv.com/podcasts/transcriptions/01a19c59-afdb-741a-aa0d-629870199071.vtt"],
+    ["171 ラジオ番組 (라디오 방송)",258,"https://podcasts.beehiiv.com/01d714bb-f289-4dca-9cb7-7be22fcc65a8/01a19c58-f464-70b3-bc31-f44ddcbe7f48/01a19c59-0c72-7de8-acfa-a559abe070cc/01a19c59-0ce5-7de4-88e3-5877f12d9d6a.mp3","https://alittlejapanese.beehiiv.com/podcast/s/nihongo_no_tane_with_yumi/nihongo_no_tane_171_radio_show_japanese_immersion_podcast","https://rss.beehiiv.com/podcasts/transcriptions/01a19c59-acb3-7dad-8fbc-32ddb8277c0a.vtt"],
+    ["170 日本のお風呂 (일본의 목욕)",247,"https://podcasts.beehiiv.com/01d714bb-f289-4dca-9cb7-7be22fcc65a8/01a19c58-f464-70b3-bc31-f44ddcbe7f48/01a19c5a-b945-79e9-8952-d07565f62ba9/01a19c5a-b9da-740b-bf16-d19ddcfc9c3e.mp3","https://alittlejapanese.beehiiv.com/podcast/s/nihongo_no_tane_with_yumi/nihongo_no_tane_170_japanese_bath_japanese_immersion_podcast","https://rss.beehiiv.com/podcasts/transcriptions/01a19c5e-7679-70d7-91a5-9241537fe242.vtt"],
+  ]},
+  { lang:"ko", show:"Talk To Me In 100% Korean", note:"韓国人同士の自然な会話・中上級", home:"https://talktomeinkorean.com", eps:[
+    ["사투리에 대해 어떻게 생각할까요? (方言)",920,"https://traffic.libsyn.com/secure/ttmik100/3._What_do_Koreans_think_about_regional_dialects_____.mp3?dest-id=1890089","https://talktomeinkorean.com"],
+    ["한국의 90년대생 (90年代生まれ)",1141,"https://traffic.libsyn.com/secure/ttmik100/2._Millennials_in_Korea__90.mp3?dest-id=1890089","https://talktomeinkorean.com"],
+    ["결혼은 꼭 해야 하나요? (結婚)",1011,"https://traffic.libsyn.com/secure/ttmik100/1._Do_Koreans_think_marriage_is_a_must________.mp3?dest-id=1890089","https://talktomeinkorean.com"],
+  ]},
+  { lang:"ko", show:"IYAGI (TTMIK)", note:"自然な韓国語の会話・中級", home:"https://talktomeinkorean.com", eps:[
+    ["스트레스 어떻게 풀어요? (ストレス)",574,"https://traffic.libsyn.com/secure/ttmikiyagi/How_Do_You_Deal_With_Stress__-_IYAGI_by_TTMIK.mp3?dest-id=588921","https://talktomeinkorean.com"],
+    ["서점에 가기 (本屋さん)",337,"https://traffic.libsyn.com/secure/ttmikiyagi/Going_to_a_Bookstore_-_IYAGI_by_TTMIK.mp3?dest-id=588921","https://talktomeinkorean.com"],
+    ["노약자석 (優先席)",470,"https://traffic.libsyn.com/secure/ttmikiyagi/Priority_Seating_For_The_Elderly_-_IYAGI_by_TTMIK.mp3?dest-id=588921","https://talktomeinkorean.com"],
+  ]},
+  { lang:"ko", show:"Real-Life Korean Conversations (初級)", note:"短い会話ダイアログ・初級", home:"https://reallifekorean.libsyn.com", eps:[
+    ["Dialogue #1 자기소개 (自己紹介)",134,"https://traffic.libsyn.com/secure/reallifekorean/Real-Life_Conversations_01.mp3?dest-id=1148357","https://reallifekorean.libsyn.com/dialogue-1-self-introductions"],
+    ["Dialogue #2 번호 교환 (連絡先の交換)",130,"https://traffic.libsyn.com/secure/reallifekorean/Real-Life_Conversations_02.mp3?dest-id=1148357","https://reallifekorean.libsyn.com/dialogue-2-exchanging-numbers"],
+    ["Dialogue #3 잘 지냈어요? (元気？)",130,"https://traffic.libsyn.com/secure/reallifekorean/Real-Life_Conversations_03.mp3?dest-id=1148357","https://reallifekorean.libsyn.com/dialogue-3-how-are-you"],
+  ]},
+];
+const LIS_AUDIO = id => `https://audio.tatoeba.org/sentences/jpn/${id}.mp3`;
 console.assert(W.length === 50 && Object.values(T).every(t => t.length === 10), "데이터 개수 오류");
 
 // 외운 단어: 단어 문자열 목록을 브라우저에 저장
@@ -176,25 +672,25 @@ const KEY = "jp-done";
 let done;
 try { done = new Set(JSON.parse(localStorage.getItem(KEY)) || []); } catch { done = new Set(); }
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify([...done])); } catch {} };
-const toggle = w => { done.has(w) ? done.delete(w) : done.add(w); save(); renderList(); renderCard(); };
+const toggle = w => { const add = !done.has(w); add ? done.add(w) : done.delete(w); save(); renderList(); renderCard(); if (window.Rec) Rec.words(done.size, add); };
 const $ = id => document.getElementById(id);
 
 // 음성 읽기 (Web Speech API)
-const say = t => `<button class="say" data-say="${t}" aria-label="읽기: ${t}">🔊</button>`;
+const say = (t, lang = "ja") => `<button class="say" data-say="${t}" data-lang="${lang}" aria-label="읽기: ${t}">🔊</button>`;
 $("rate").oninput = () => $("rateVal").textContent = (+$("rate").value).toFixed(1) + "x";
-function speak(text) {
+function speak(text, lang = "ja") {
   if (!("speechSynthesis" in window)) return alert("이 브라우저는 음성 읽기를 지원하지 않아요.");
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = "ja-JP";
-  u.voice = speechSynthesis.getVoices().find(v => v.lang.replace("_", "-") === "ja-JP") || null;
+  u.lang = lang === "ko" ? "ko-KR" : "ja-JP";
+  u.voice = speechSynthesis.getVoices().find(v => v.lang.replace("_", "-") === u.lang) || null;
   u.rate = +$("rate").value;
   speechSynthesis.speak(u);
 }
 // 캡처 단계에서 처리해 카드 뒤집기/체크박스 토글이 같이 일어나지 않게 함
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-say]");
-  if (b) { e.preventDefault(); e.stopPropagation(); speak(b.dataset.say); }
+  if (b) { e.preventDefault(); e.stopPropagation(); speak(b.dataset.say, b.dataset.lang); }
 }, true);
 
 // 탭
@@ -234,7 +730,7 @@ function renderCard() {
   $("mark").textContent = done.has(jp) ? "✅ 외움 (취소)" : "☐ 외웠어요";
 }
 const go = step => { i += step; flipped = false; renderCard(); };
-$("card").onclick = () => { flipped = !flipped; renderCard(); };
+$("card").onclick = () => { flipped = !flipped; renderCard(); if (flipped && window.Rec) Rec.card(); };
 $("card").onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("card").click(); } };
 $("prev").onclick = () => go(-1);
 $("next").onclick = () => go(1);
@@ -247,8 +743,858 @@ $("talk").innerHTML = Object.entries(T).map(([title, list]) =>
   `<h2>${title}</h2>` + list.map(([jp, ko]) => `<div class="phrase"><div>${jp}${say(jp)}</div><div class="ko">${ko}</div></div>`).join("")
 ).join("");
 
+// ── 듣기 모드 ──
+// 하나의 <audio> 요소로 "원어민 녹음 → 무음(따라 말할 틈) → 반복"을 이어서 틀어
+// 화면이 꺼져도 브라우저가 재생을 이어가게 함. 틈도 setTimeout 대신 무음 오디오로 채움.
+const lis = { el: new Audio(), order: L.map((_, n) => n), pos: 0, rep: 0, phase: "idle", playing: false };
+lis.el.preload = "auto";
+const silence = (() => { const cache = {}; return sec => {
+  if (cache[sec]) return cache[sec];
+  const rate = 8000, n = Math.round(rate * sec), buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+  const w = (o, str) => [...str].forEach((c, k) => v.setUint8(o + k, c.charCodeAt(0)));
+  w(0, "RIFF"); v.setUint32(4, 36 + n * 2, true); w(8, "WAVEfmt "); v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true);
+  v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, "data"); v.setUint32(40, n * 2, true);
+  return cache[sec] = URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
+}; })();
+const lisCur = () => L[lis.order[lis.pos]];
+function lisShow() {
+  const [id, , jp, ko] = lisCur(), hide = $("lisHide").checked;
+  $("lisJp").textContent = jp;
+  $("lisKo").textContent = hide && lis.phase !== "reveal" ? "（뜻은 마지막에 보여요）" : ko;
+  const reps = +$("lisRep").value;
+  $("lisStep").textContent = !lis.playing ? `⏸ ${lis.pos + 1} / ${L.length}`
+    : lis.phase === "gap" ? "🗣 따라 말해 보세요" : lis.phase === "reveal" ? "💡 뜻 확인" : `🎧 듣는 중 ${Math.min(lis.rep + 1, reps)}/${reps} · ${lis.pos + 1} / ${L.length}`;
+  $("lisPlay").textContent = lis.playing ? "⏸ 일시정지" : "▶ 재생";
+  document.querySelectorAll("#lisList .phrase").forEach(p => p.classList.toggle("on", +p.dataset.id === id));
+  if ("mediaSession" in navigator) {
+    navigator.mediaSession.metadata = new MediaMetadata({ title: jp, artist: hide && lis.phase !== "reveal" ? "듣기 모드" : ko, album: "🎧 일본어 듣기 모드" });
+    navigator.mediaSession.playbackState = lis.playing ? "playing" : "paused";
+  }
+}
+function lisLoad(src, isVoice) {
+  lis.el.src = src;
+  lis.el.playbackRate = isVoice ? +$("lisSpd").value : 1;
+  lis.el.play().catch(() => { lis.playing = false; lisShow(); });
+}
+function lisStep() {
+  if (!lis.playing) return;
+  const reps = +$("lisRep").value, gap = +$("lisGap").value;
+  if (lis.phase === "voice") { lis.phase = "gap"; lis.rep++; lisLoad(silence(gap), false); }
+  else if (lis.phase === "gap" && lis.rep < reps) { lis.phase = "voice"; lisLoad(LIS_AUDIO(lisCur()[0]), true); }
+  else if (lis.phase === "gap") { lis.phase = "reveal"; lisLoad(silence(1), false); }
+  else { lis.pos = (lis.pos + 1) % L.length; lisStart(); return; }
+  lisShow();
+}
+function lisStart() { lis.rep = 0; lis.phase = "voice"; lisLoad(LIS_AUDIO(lisCur()[0]), true); lisShow(); }
+lis.el.onended = lisStep;
+lis.el.onerror = () => { if (lis.playing && lis.phase === "voice") { lis.phase = "reveal"; lisStep(); } };
+function lisToggle(on = !lis.playing) {
+  lis.playing = on;
+  if (on) { lis.phase === "idle" || lis.el.ended || !lis.el.src ? lisStart() : lis.el.play().catch(() => {}); }
+  else lis.el.pause();
+  lisShow();
+}
+const lisJump = d => { lis.pos = (lis.pos + d + L.length) % L.length; if (lis.playing) lisStart(); else { lis.phase = "idle"; lisShow(); } };
+$("lisPlay").onclick = () => lisToggle();
+$("lisPrev").onclick = () => lisJump(-1);
+$("lisNext").onclick = () => lisJump(1);
+$("lisHide").onchange = lisShow;
+$("lisShuf").onchange = () => {
+  const cur = lis.order[lis.pos];
+  lis.order = L.map((_, n) => n);
+  if ($("lisShuf").checked) lis.order.sort(() => Math.random() - 0.5);
+  lis.pos = lis.order.indexOf(cur); lisShow();
+};
+$("lisList").innerHTML = L.map(([id, , jp, ko]) => `<div class="phrase" data-id="${id}"><div>${jp}</div><div class="ko">${ko}</div></div>`).join("");
+$("lisList").onclick = e => {
+  const p = e.target.closest(".phrase"); if (!p) return;
+  lis.pos = lis.order.indexOf(L.findIndex(x => x[0] === +p.dataset.id));
+  lis.playing = true; lisStart();
+};
+if ("mediaSession" in navigator) {
+  const ms = navigator.mediaSession;
+  ms.setActionHandler("play", () => lisToggle(true));
+  ms.setActionHandler("pause", () => lisToggle(false));
+  ms.setActionHandler("previoustrack", () => lisJump(-1));
+  ms.setActionHandler("nexttrack", () => lisJump(1));
+}
+lisShow();
+
+// ── 긴 회화 · 팟캐스트 ──
+const pod = { el: new Audio(), cur: null, cues: [] };
+pod.el.preload = "metadata";
+const fmt = t => { t = Math.max(0, Math.floor(t || 0)); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`; };
+const podKey = "jp-pod-pos";
+const podPos = () => { try { return JSON.parse(localStorage.getItem(podKey)) || {}; } catch { return {}; } };
+const podSave = () => { if (!pod.cur) return; const m = podPos(); m[pod.cur[2]] = pod.el.currentTime; try { localStorage.setItem(podKey, JSON.stringify(m)); } catch {} };
+function segShow(podOn) {
+  $("segShort").setAttribute("aria-pressed", !podOn); $("segPod").setAttribute("aria-pressed", podOn);
+  $("lisShort").hidden = podOn; $("lisPod").hidden = !podOn;
+}
+$("segShort").onclick = () => segShow(false);
+$("segPod").onclick = () => segShow(true);
+$("podList").innerHTML = POD.map((s, si) =>
+  `<div class="pod-show">${s.lang === "ja" ? "🇯🇵" : "🇰🇷"} ${s.show} <a href="${s.home}" target="_blank" rel="noopener" aria-label="제작자 페이지">🔗</a><br><small>${s.note}</small></div>` +
+  s.eps.map((e, ei) => `<div class="phrase pod-ep" data-s="${si}" data-e="${ei}"><span>${e[0]}</span><span class="dur">${e[1] ? fmt(e[1]) : ""}</span></div>`).join("")
+).join("");
+async function podLoadCues(url) {
+  pod.cues = []; $("podCap").textContent = "";
+  if (!url) return;
+  try {
+    const txt = await (await fetch(url)).text();
+    const sec = h => h.split(":").reverse().reduce((a, v, k) => a + parseFloat(v) * 60 ** k, 0);
+    pod.cues = txt.split(/\r?\n\r?\n/).map(b => {
+      const m = b.match(/([\d:.]+)\s*-->\s*([\d:.]+)[^\n]*\n([\s\S]*)/);
+      return m && [sec(m[1]), sec(m[2]), m[3].replace(/<[^>]+>/g, "").trim()];
+    }).filter(Boolean);
+  } catch { pod.cues = []; }
+}
+function podPick(si, ei) {
+  const s = POD[si], e = s.eps[ei];
+  lis.playing = false; lis.el.pause(); lisShow();
+  pod.cur = e; pod.show = s;
+  pod.el.src = e[2]; pod.el.playbackRate = +$("podSpd").value;
+  const saved = podPos()[e[2]];
+  pod.el.onloadedmetadata = () => { if (saved && saved < pod.el.duration - 5) pod.el.currentTime = saved; pod.el.playbackRate = +$("podSpd").value; };
+  $("podShow").textContent = s.show; $("podTitle").textContent = e[0];
+  document.querySelectorAll(".pod-ep").forEach(p => p.classList.toggle("on", p.dataset.s == si && p.dataset.e == ei));
+  podLoadCues(e[4]);
+  pod.el.play().catch(() => {});
+  if ("mediaSession" in navigator) navigator.mediaSession.metadata = new MediaMetadata({ title: e[0], artist: s.show, album: "🎙 긴 회화 듣기" });
+}
+$("podList").onclick = e => { const p = e.target.closest(".pod-ep"); if (p) podPick(+p.dataset.s, +p.dataset.e); };
+$("podPlay").onclick = () => { if (!pod.cur) return podPick(0, 0); pod.el.paused ? pod.el.play().catch(() => {}) : pod.el.pause(); };
+const podSeek = d => { if (pod.cur) pod.el.currentTime = Math.max(0, pod.el.currentTime + d); };
+$("podBack").onclick = () => podSeek(-10);
+$("podFwd").onclick = () => podSeek(10);
+$("podSpd").onchange = () => pod.el.playbackRate = +$("podSpd").value;
+$("podBar").oninput = () => { if (pod.el.duration) pod.el.currentTime = $("podBar").value / 1000 * pod.el.duration; };
+pod.el.onplay = pod.el.onpause = () => {
+  $("podPlay").textContent = pod.el.paused ? "▶ 재생" : "⏸ 일시정지";
+  if ("mediaSession" in navigator) navigator.mediaSession.playbackState = pod.el.paused ? "paused" : "playing";
+  podSave();
+};
+let podTick = 0;
+pod.el.ontimeupdate = () => {
+  const t = pod.el.currentTime, d = pod.el.duration || (pod.cur && pod.cur[1]) || 0;
+  $("podCur").textContent = fmt(t); $("podDur").textContent = fmt(d);
+  if (d && document.activeElement !== $("podBar")) $("podBar").value = t / d * 1000;
+  const c = pod.cues.find(c => t >= c[0] && t < c[1]); $("podCap").textContent = c ? c[2] : "";
+  if (++podTick % 20 === 0) podSave();
+};
+pod.el.onerror = () => { if (pod.cur) $("podShow").textContent = "⚠ 이 에피소드를 불러오지 못했어요. 🔗 제작자 페이지에서 들어 주세요."; };
+// 잠금화면 버튼: 지금 틀고 있는 쪽(짧은 문장/팟캐스트)을 조작
+if ("mediaSession" in navigator) {
+  const ms = navigator.mediaSession, podOn = () => !$("lisPod").hidden && pod.cur;
+  ms.setActionHandler("play", () => podOn() ? pod.el.play() : lisToggle(true));
+  ms.setActionHandler("pause", () => podOn() ? pod.el.pause() : lisToggle(false));
+  try { ms.setActionHandler("seekbackward", () => podSeek(-10)); ms.setActionHandler("seekforward", () => podSeek(10)); } catch {}
+}
+$("lisPlay").addEventListener("click", () => pod.el.pause());
+
+// ── 🏆 내 기록 · 出席と記録 ──
+// 모든 기록은 이 기기의 localStorage("jp-rec")에만 저장돼요.
+// 다른 기능(게임 등)에서 쓰는 공개 API:
+//   Rec.game(id, score, {ko, ja})  게임 점수 기록 (최고 기록이면 🎉 알림)
+//   Rec.listen(sec) / Rec.card() / Rec.words(n, added)
+const Rec = (() => {
+  const KEY_R = "jp-rec";
+  const ymd = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const def = () => ({ days: [], longest: 0, listenSec: 0, cards: 0, wordsMax: 0, games: {}, badges: {}, today: { d: "", cards: 0, listenSec: 0, words: 0 }, night: 0, early: 0 });
+  let r;
+  try { r = Object.assign(def(), JSON.parse(localStorage.getItem(KEY_R)) || {}); } catch { r = def(); }
+  const store = () => { try { localStorage.setItem(KEY_R, JSON.stringify(r)); } catch {} };
+  let lang = (() => { try { return localStorage.getItem("jp-rec-lang"); } catch {} })() || (/^ja/i.test(navigator.language) ? "ja" : "ko");
+  const t = (ko, ja) => lang === "ja" ? ja : ko;
+
+  const today = () => { const d = ymd(); if (r.today.d !== d) r.today = { d, cards: 0, listenSec: 0, words: 0 }; return r.today; };
+  const daySet = () => new Set(r.days);
+  // 오늘 기준 연속 출석 일수 (오늘 아직 안 했으면 어제까지 이어진 것도 살아 있는 걸로 셈)
+  function streak() {
+    const s = daySet(), d = new Date();
+    if (!s.has(ymd(d))) d.setDate(d.getDate() - 1);
+    let n = 0;
+    while (s.has(ymd(d))) { n++; d.setDate(d.getDate() - 1); }
+    return n;
+  }
+  const checkedToday = () => daySet().has(ymd());
+
+  // 출석: 오늘 처음 공부(카드 넘기기·단어 외우기·듣기·게임)를 하면 도장이 찍혀요
+  function activity() {
+    today();
+    if (!checkedToday()) {
+      r.days.push(ymd());
+      const s = streak();
+      const isRecord = s > r.longest && r.days.length > 1;
+      r.longest = Math.max(r.longest, s);
+      toast(s > 1 ? t(`🌸 출석 완료! ${s}일 연속${isRecord ? " · 최고 기록!" : ""}`, `🌸 出席！${s}日連続${isRecord ? "・自己ベスト！" : ""}`)
+                  : t("🌸 오늘 출석 완료!", "🌸 今日の出席完了！"));
+    }
+    const h = new Date().getHours();
+    if (h >= 23 || h < 4) r.night++;
+    if (h >= 4 && h < 7) r.early++;
+    checkBadges(); store(); if (!$("rec").hidden) render();
+  }
+
+  const fmtMin = sec => { const m = Math.floor(sec / 60); return m >= 60 ? t(`${Math.floor(m / 60)}시간 ${m % 60}분`, `${Math.floor(m / 60)}時間${m % 60}分`) : t(`${m}분`, `${m}分`); };
+  const gamePlays = () => Object.values(r.games).reduce((a, g) => a + g.plays, 0);
+  const BADGES = [
+    ["first", "🌱", "첫 출석", "はじめての出席", "출석 1일", "出席1日", () => r.days.length >= 1],
+    ["s3", "🔥", "3일 연속", "3日連続", "연속 3일", "連続3日", () => r.longest >= 3],
+    ["s7", "🗓️", "일주일 개근", "1週間皆勤", "연속 7일", "連続7日", () => r.longest >= 7],
+    ["s30", "👑", "한 달 개근", "1ヶ月皆勤", "연속 30일", "連続30日", () => r.longest >= 30],
+    ["d10", "📅", "10일 출석", "通算10日", "총 10일", "通算10日", () => r.days.length >= 10],
+    ["w10", "📖", "단어 10개", "単語10個", "외운 단어 10", "覚えた単語10", () => r.wordsMax >= 10],
+    ["w30", "📚", "단어 30개", "単語30個", "외운 단어 30", "覚えた単語30", () => r.wordsMax >= 30],
+    ["w50", "🎓", "단어장 정복", "単語帳制覇", "50개 전부", "50個すべて", () => r.wordsMax >= 50],
+    ["c100", "🃏", "카드 100장", "カード100枚", "카드 100번 뒤집기", "カードを100回めくる", () => r.cards >= 100],
+    ["l10", "🎧", "귀가 트이는 중", "耳が慣れてきた", "10분 듣기", "10分リスニング", () => r.listenSec >= 600],
+    ["l60", "🎙️", "1시간 듣기", "1時間リスニング", "누적 60분", "累計60分", () => r.listenSec >= 3600],
+    ["l300", "🚇", "통학 마스터", "通学マスター", "누적 5시간", "累計5時間", () => r.listenSec >= 18000],
+    ["g1", "🎮", "첫 게임", "はじめてのゲーム", "게임 1판", "ゲーム1回", () => gamePlays() >= 1],
+    ["g20", "🕹️", "게임 20판", "ゲーム20回", "게임 20판", "ゲーム20回", () => gamePlays() >= 20],
+    ["owl", "🦉", "올빼미", "夜ふかし", "밤 11시~새벽 4시 공부", "23時〜4時に勉強", () => r.night >= 1],
+    ["bird", "🐓", "새벽형", "早起き", "새벽 4~7시 공부", "4時〜7時に勉強", () => r.early >= 1],
+  ];
+  function checkBadges() {
+    BADGES.forEach(([id, e, ko, ja, , , ok]) => {
+      if (!r.badges[id] && ok()) { r.badges[id] = ymd(); setTimeout(() => toast(`${e} ${t("배지 획득", "バッジ獲得")}: ${t(ko, ja)}`), 1600); }
+    });
+  }
+
+  let toastT, toastQ = Promise.resolve();
+  function toast(msg) {
+    toastQ = toastQ.then(() => new Promise(res => {
+      const el = $("toast"); el.textContent = msg; el.classList.add("show");
+      clearTimeout(toastT); toastT = setTimeout(() => { el.classList.remove("show"); setTimeout(res, 300); }, 2200);
+    }));
+  }
+
+  let calOff = 0; // 달력: 0 = 이번 달
+  function render() {
+    const s = streak(), td = today(), days = daySet(), chk = checkedToday();
+    const base = new Date(); base.setDate(1); base.setMonth(base.getMonth() + calOff);
+    const y = base.getFullYear(), m = base.getMonth(), first = new Date(y, m, 1).getDay(), last = new Date(y, m + 1, 0).getDate();
+    const monthDays = r.days.filter(d => d.startsWith(`${y}-${String(m + 1).padStart(2, "0")}`)).length;
+    const dows = lang === "ja" ? "日月火水木金土" : "일월화수목금토";
+    let cal = [...dows].map(d => `<div class="dow">${d}</div>`).join("") + "<div></div>".repeat(first);
+    for (let d = 1; d <= last; d++) {
+      const k = `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      cal += `<div class="d${days.has(k) ? " on" : ""}${k === ymd() ? " today" : ""}">${d}</div>`;
+    }
+    const games = Object.entries(r.games).sort((a, b) => b[1].at - a[1].at);
+    const got = BADGES.filter(b => r.badges[b[0]]).length;
+    $("rec").innerHTML = `
+      <button class="rec-lang" id="recLang">${lang === "ja" ? "🇰🇷 한국어" : "🇯🇵 日本語"}</button>
+      <h2 style="margin-top:4px">${t("출석", "出席")}</h2>
+      <div class="rec-hero">
+        <div class="big">🔥 ${s}</div>
+        <div class="sub">${t(`일 연속 출석 · 최고 ${r.longest}일`, `日連続 · 自己ベスト ${r.longest}日`)}</div>
+        <div class="rec-today${chk ? "" : " todo"}">${chk
+          ? t(`✅ 오늘 출석 완료 · 카드 ${td.cards}장 · 듣기 ${fmtMin(td.listenSec)}`, `✅ 今日は出席済み · カード${td.cards}枚 · リスニング${fmtMin(td.listenSec)}`)
+          : t(`🌱 아직 오늘 출석 전이에요. 카드 한 장만 넘겨도 출석돼요!`, `🌱 今日はまだ出席していません。カードを1枚めくるだけでOK！`)}</div>
+      </div>
+      <div class="cal-head">
+        <button id="calPrev" aria-label="${t("이전 달", "前の月")}">◀</button>
+        <b>${lang === "ja" ? `${y}年${m + 1}月` : `${y}년 ${m + 1}월`} · 🌸 ${monthDays}${t("일", "日")}</b>
+        <button id="calNext" aria-label="${t("다음 달", "次の月")}" ${calOff >= 0 ? "disabled" : ""}>▶</button>
+      </div>
+      <div class="cal">${cal}</div>
+
+      <h2>${t("내 기록", "マイ記録")}</h2>
+      <div class="rec-grid">
+        <div class="rec-stat"><b>${r.days.length}${t("일", "日")}</b><span>📅 ${t("총 출석", "通算出席")}</span></div>
+        <div class="rec-stat"><b>${r.longest}${t("일", "日")}</b><span>🔥 ${t("최장 연속", "最長連続")}</span></div>
+        <div class="rec-stat"><b>${done.size} / ${W.length}</b><span>📖 ${t(`외운 단어 (최고 ${r.wordsMax})`, `覚えた単語（最高 ${r.wordsMax}）`)}</span></div>
+        <div class="rec-stat"><b>${fmtMin(r.listenSec)}</b><span>🎧 ${t("들은 시간", "聞いた時間")}</span></div>
+        <div class="rec-stat"><b>${r.cards}</b><span>🃏 ${t("뒤집은 카드", "めくったカード")}</span></div>
+        <div class="rec-stat"><b>${gamePlays()}</b><span>🎮 ${t("게임 판수", "ゲーム回数")}</span></div>
+      </div>
+
+      <h2>${t("게임 최고 기록", "ゲーム自己ベスト")}</h2>
+      <div class="games-rec">${games.length ? games.map(([, g]) =>
+        `<div class="phrase"><span>${t(g.ko, g.ja)}</span><span><b>${g.best}</b> <small style="color:var(--muted)">· ${g.plays}${t("판", "回")}</small></span></div>`).join("")
+        : `<p class="lis-step">${t("아직 기록이 없어요. 게임을 한 판 하면 최고 점수가 여기 쌓여요.", "まだ記録がありません。ゲームを1回遊ぶと、ここにベストスコアが残ります。")}</p>`}</div>
+
+      <h2>${t(`배지 ${got} / ${BADGES.length}`, `バッジ ${got} / ${BADGES.length}`)}</h2>
+      <div class="badges">${BADGES.map(([id, e, ko, ja, hko, hja]) =>
+        `<div class="badge${r.badges[id] ? "" : " lock"}"><span class="e">${e}</span>${t(ko, ja)}<small>${r.badges[id] ? r.badges[id].slice(5).replace("-", "/") : t(hko, hja)}</small></div>`).join("")}</div>
+      <p class="lis-credit">${t("기록은 이 기기의 브라우저에만 저장돼요.", "記録はこの端末のブラウザにだけ保存されます。")}</p>`;
+    $("recLang").onclick = () => { lang = lang === "ja" ? "ko" : "ja"; try { localStorage.setItem("jp-rec-lang", lang); } catch {} render(); };
+    $("calPrev").onclick = () => { calOff--; render(); };
+    $("calNext").onclick = () => { if (calOff < 0) { calOff++; render(); } };
+  }
+
+  // 듣기 시간: 재생 중 timeupdate 사이의 실제 경과 시간을 더함 (화면 꺼져도 동작)
+  const tracker = el => { let last = 0; el.addEventListener("timeupdate", () => {
+    const now = Date.now(), dt = (now - last) / 1000; last = now;
+    if (!el.paused && dt > 0 && dt < 5) api.listen(dt);
+  }); };
+
+  let lastSave = 0;
+  const api = {
+    render, toast,
+    card() { r.cards++; today().cards++; activity(); },
+    words(n, added) { r.wordsMax = Math.max(r.wordsMax, n); if (added) { today().words++; activity(); } else store(); },
+    listen(sec) {
+      const wasMin = Math.floor(today().listenSec / 60);
+      r.listenSec += sec; today().listenSec += sec;
+      // 1분 들으면 출석으로 인정
+      if (!checkedToday() && today().listenSec >= 60) return activity();
+      if (Math.floor(today().listenSec / 60) !== wasMin) { checkBadges(); if (!$("rec").hidden) render(); }
+      if (Date.now() - lastSave > 5000) { lastSave = Date.now(); store(); }
+    },
+    game(id, score, name = {}) {
+      const g = r.games[id] || (r.games[id] = { best: null, plays: 0 });
+      g.ko = name.ko || g.ko || id; g.ja = name.ja || g.ja || id;
+      const isBest = g.best === null || score > g.best;
+      if (g.best !== null && isBest) toast(t(`🎉 신기록! ${g.ko} ${score}점`, `🎉 自己ベスト更新！${g.ja} ${score}点`));
+      if (isBest) g.best = score;
+      g.plays++; g.at = Date.now();
+      activity();
+      return isBest;
+    },
+    tracker,
+  };
+  r.wordsMax = Math.max(r.wordsMax, done.size);
+  if (r.longest < streak()) r.longest = streak();
+  checkBadges(); store();
+  return api;
+})();
+window.Rec = Rec;
+Rec.tracker(lis.el);
+Rec.tracker(pod.el);
+document.querySelector('nav [data-tab="rec"]').addEventListener("click", () => Rec.render());
+// 같은 한자어라 한국어 소리가 닮은 단어 (한자 → 한국 한자음)
+const HANJA = { 経験:"경험", 準備:"준비", 説明:"설명", 必要:"필요", 約束:"약속", 予定:"예정", 機会:"기회", 状況:"상황", 影響:"영향", 解決:"해결",
+  努力:"노력", 期待:"기대", 関係:"관계", 環境:"환경", 将来:"장래", 目的:"목적", 結果:"결과", 原因:"원인", 意見:"의견", 確認する:"확인", 正直:"정직", 突然:"돌연" };
+
+// 일본어 사용자용: 각 단어의 대표 한국어 한 단어 + 가타카나 발음
+const KR = {
+  経験:["경험","キョンホム"], 準備:["준비","チュンビ"], 説明:["설명","ソルミョン"], 必要:["필요","ピリョ"], 約束:["약속","ヤクソク"],
+  予定:["예정","イェジョン"], 機会:["기회","キフェ"], 状況:["상황","サンファン"], 影響:["영향","ヨンヒャン"], 解決:["해결","ヘギョル"],
+  努力:["노력","ノリョク"], 期待:["기대","キデ"], 関係:["관계","クァンゲ"], 環境:["환경","ファンギョン"], 将来:["장래","チャンネ"],
+  目的:["목적","モクチョク"], 結果:["결과","キョルグァ"], 原因:["원인","ウォニン"], 意見:["의견","ウィギョン"], 手続き:["절차","チョルチャ"],
+  申し込む:["신청하다","シンチョンハダ"], 断る:["거절하다","コジョラダ"], 届ける:["가져다주다","カジョダジュダ"], 比べる:["비교하다","ピギョハダ"], 続ける:["계속하다","ケソカダ"],
+  増える:["늘다","ヌルダ"], 減る:["줄다","チュルダ"], 迷う:["헤매다","ヘメダ"], 慣れる:["익숙해지다","イクスケジダ"], 預ける:["맡기다","マッキダ"],
+  間に合う:["시간에 맞추다","シガネ マッチュダ"], 片付ける:["정리하다","チョンニハダ"], 支払う:["지불하다","チブラダ"], 確認する:["확인하다","ファギナダ"], 我慢する:["참다","チャムタ"],
+  遠慮する:["사양하다","サヤンハダ"], 譲る:["양보하다","ヤンボハダ"], 戻る:["돌아오다","トラオダ"], 伝える:["전하다","チョナダ"], 集める:["모으다","モウダ"],
+  詳しい:["자세하다","チャセハダ"], 珍しい:["드물다","トゥムルダ"], 厳しい:["엄하다","オマダ"], 懐かしい:["그립다","クリプタ"], 恥ずかしい:["부끄럽다","プックロプタ"],
+  素直:["솔직함","ソルチカム"], 正直:["정직","チョンジク"], 大切:["소중함","ソジュンハム"], 突然:["갑자기","カプチャギ"], 相変わらず:["여전히","ヨジョニ"],
+};
+console.assert(W.every(w => KR[w[0]]), "KR 누락");
+
+// 게임: 한·일 단어 대결
+// side "ko" = 한국어 사용자(일본어 단어를 보고 한국어 뜻 고르기), "ja" = 日本語ユーザー(韓国語を見て日本語を選ぶ)
+const G = { mode: null, qs: [], n: 0, score: { ko: 0, ja: 0 }, timer: null, left: 0 };
+const LIMIT = 10, PER = 10;
+const BEST = "jp-game-best";
+const getBest = () => { try { return JSON.parse(localStorage.getItem(BEST)) || {}; } catch { return {}; } };
+const showBest = () => { const b = getBest(); $("gBest").textContent = `최고 점수 · ベスト: 🇰🇷 ${b.ko || 0} / 🇯🇵 ${b.ja || 0}`; };
+const pick = (arr, k) => [...arr].sort(() => Math.random() - 0.5).slice(0, k);
+let view = v => ["gSetup", "gPlay", "gEnd", "cPlay", "cEnd", "rPlay", "rEnd"].forEach(id => $(id).hidden = id !== v);
+// 게임하는 동안엔 위·아래 메뉴를 숨김 (게임 나가기 버튼만 남김)
+const _view = view;
+view = v => { _view(v); const on = ["gPlay", "cPlay", "rPlay"].includes(v); document.body.classList.toggle("playing", on); if (on) scrollTo(0, 0); };
+
+const makeQs = () => pick(W.map((_, i) => i), PER).map(w => ({ w, opts: pick([w, ...pick(W.map((_, i) => i).filter(i => i !== w), 3)], 4) }));
+function startGame(mode, qs = makeQs()) {
+  G.mode = mode; G.n = 0; G.score = { ko: 0, ja: 0 };
+  // 둘이서: 번갈아 출제 (ko, ja, ko, ja ...) / 온라인: 내 언어 쪽 문제만
+  G.qs = qs.map((q, k) => ({ ...q, side: mode === "duel" ? (k % 2 ? "ja" : "ko") : mode === "online" ? ON.side : mode }));
+  $("oOpp").hidden = $("oEmotes").hidden = mode !== "online";
+  view("gPlay"); ask();
+}
+function showScore(side) {
+  $("gScore").textContent = G.mode === "duel" || G.mode === "online" ? `🇰🇷 ${G.score.ko} : ${G.score.ja} 🇯🇵` : `점수 · 得点 ${G.score[side]}`;
+}
+function ask() {
+  clearInterval(G.timer); clearTimeout(G.hint);
+  const { w, side } = G.qs[G.n];
+  const [jp, yomi, ko] = W[w];
+  const opts = G.qs[G.n].opts;
+  if (G.mode === "online") onlineStatus();
+  $("gTurn").textContent = (G.mode === "duel" ? (side === "ko" ? "🇰🇷 한국인 차례" : "🇯🇵 日本人の番") : "") + ` ${G.n + 1} / ${G.qs.length}`;
+  showScore(side);
+  $("gQ").innerHTML = side === "ko"
+    ? `<div class="jp">${jp}${say(jp)}</div><div class="ex" style="margin-top:12px">이 단어의 뜻은?</div>`
+    : `<div class="jp">${KR[jp][0]}${say(KR[jp][0], "ko")}</div><div class="ex" style="margin-top:12px">この韓国語の意味は？</div><div class="hint" id="gHint"></div>`;
+  // 일본어 사용자: 3초 뒤 가타카나 발음 힌트
+  if (side === "ja") G.hint = setTimeout(() => $("gHint") && ($("gHint").textContent = "💡 " + KR[jp][1]), 3000);
+  $("gChoices").innerHTML = "";
+  opts.forEach(o => {
+    const b = document.createElement("button");
+    b.innerHTML = side === "ko" ? W[o][2] : `${W[o][0]}<div class="ex" style="margin:0;font-size:.85rem">${W[o][1]}</div>`;
+    b.onclick = () => answer(o, b);
+    b.dataset.w = o;
+    $("gChoices").append(b);
+  });
+  $("gNext").hidden = true;
+  G.left = LIMIT * 10;
+  $("gTime").style.width = "100%";
+  G.timer = setInterval(() => {
+    G.left--; $("gTime").style.width = G.left / (LIMIT / 10) + "%";
+    if (G.left <= 0) answer(null, null);
+  }, 100);
+}
+function answer(o, btn) {
+  clearInterval(G.timer);
+  const { w, side } = G.qs[G.n];
+  const [jp, yomi, ko, ex] = W[w];
+  const right = o === w;
+  clearTimeout(G.hint);
+  if (right) G.score[side] += 100 + Math.round(G.left);  // 기본 100점 + 남은 시간 보너스(최대 100)
+  $("gChoices").querySelectorAll("button").forEach(b => {
+    b.disabled = true;
+    if (+b.dataset.w === w) b.classList.add("ok");
+  });
+  if (btn && !right) btn.classList.add("ng");
+  // 정답 공개: 양쪽 언어를 모두 보여 줘서 서로의 언어를 접하게 함
+  $("gQ").innerHTML = `<div style="font-size:1.6rem">${right ? "⭕ 정답! 正解！" : o === null ? "⏰ 시간 초과 · 時間切れ" : "❌ 아쉬워요 · 残念"}</div>
+    <div class="back"><span class="jp">${jp}</span>${say(jp)} <span class="yomi">${yomi}</span><br>
+    🇰🇷 ${side === "ja" ? `${KR[jp][0]} <span class="yomi">${KR[jp][1]}</span>` : ko}${say(KR[jp][0], "ko")}<br><span class="ex">${ex}</span>${say(ex)}</div>` +
+    (HANJA[jp] ? `<div class="ex" style="margin-top:10px">💡 같은 한자어라 소리가 닮았어요 · 同じ漢字語で音が似ています<br><b>${jp.replace("する","")}</b> = ${HANJA[jp]} (${jp === "確認する" ? "ファギン" : KR[jp][1]}) ≈ ${yomi.replace("する","")}${say(HANJA[jp], "ko")}</div>` : "");
+  showScore(side);
+  if (G.mode === "online") { ON.mine.add(G.n); send({ t: "a", n: G.n, score: G.score[side] }); onlineStatus(); return; }
+  $("gNext").hidden = false;
+  $("gNext").focus();
+}
+function endGame() {
+  clearInterval(G.timer);
+  if (G.mode === "online") {
+    const me = ON.side, op = me === "ko" ? "ja" : "ko", s = G.score;
+    $("gResult").innerHTML = `<div style="font-size:2rem">${s[me] === s[op] ? "🤝 무승부 · 引き分け" : (s[me] > s[op]) === (me === "ko") ? "🇰🇷 한국인 승리!<br>韓国人の勝ち！" : "🇯🇵 日本人の勝ち！<br>일본인 승리!"}</div>
+      <div class="back">🇰🇷 ${s.ko} : ${s.ja} 🇯🇵</div><div class="ex" style="margin-top:12px">${s[me] >= s[op] ? "" : "다음엔 이길 거예요! · 次は勝てる！"}</div>`;
+    if (window.Rec) Rec.game("online", G.score[ON.side], { ko: "온라인 대결", ja: "オンライン対戦" });
+    view("gEnd"); return;
+  }
+  const b = getBest(), s = G.score;
+  ["ko", "ja"].forEach(k => { if (s[k] > (b[k] || 0)) b[k] = s[k]; });
+  try { localStorage.setItem(BEST, JSON.stringify(b)); } catch {}
+  $("gResult").innerHTML = G.mode === "duel"
+    ? `<div style="font-size:2rem">${s.ko === s.ja ? "🤝 무승부 · 引き分け" : s.ko > s.ja ? "🇰🇷 한국인 승리!<br>韓国人の勝ち！" : "🇯🇵 日本人の勝ち！<br>일본인 승리!"}</div><div class="back">🇰🇷 ${s.ko} : ${s.ja} 🇯🇵</div>`
+    : `<div style="font-size:2rem">🏁 ${s[G.mode]}점 · 点</div><div class="back">최고 점수 · ベスト ${b[G.mode]}</div>`;
+  if (window.Rec && (G.mode === "ko" || G.mode === "ja")) Rec.game("battle-" + G.mode, s[G.mode], { ko: `한·일 단어 대결 (${G.mode === "ko" ? "🇰🇷" : "🇯🇵"})`, ja: `日韓単語バトル（${G.mode === "ko" ? "🇰🇷" : "🇯🇵"}）` });
+  view("gEnd");
+}
+const nextQ = () => { G.n++; G.n < G.qs.length ? ask() : endGame(); };
+$("gNext").onclick = () => {
+  if (G.mode === "online") send({ t: "next", n: G.n });
+  nextQ();
+};
+$("gQuit").onclick = () => { clearInterval(G.timer); if (G.mode === "online") hangUp(); showBest(); view("gSetup"); };
+$("gAgain").onclick = () => {
+  if (G.mode !== "online") return startGame(G.mode);
+  if (!ON.conn || !ON.conn.open) return oMsg("상대와 연결이 끊겼어요 · 相手との接続が切れました"), view("gSetup");
+  const qs = makeQs(); send({ t: "start", qs }); startGame("online", qs);
+};
+$("gMenu").onclick = () => { if (G.mode === "online") hangUp(); showBest(); view("gSetup"); };
+
+// 온라인 대결 (PeerJS: 브라우저끼리 직접 연결, 무료 공개 중계 서버로 처음 연결만 맺음)
+// 방 코드 4자리 → peer id "hanil-game-XXXX". 방장이 문제를 만들어 상대에게 보냄.
+const ON = { peer: null, conn: null, side: null, mine: new Set(), theirs: new Set() };
+const PREFIX = "hanil-game-";
+const oMsg = h => $("oStatus").innerHTML = h;
+const send = m => { try { ON.conn && ON.conn.open && ON.conn.send(m); } catch {} };
+function loadPeer() {
+  if (window.Peer) return Promise.resolve();
+  return new Promise((ok, ng) => {
+    const sc = document.createElement("script");
+    sc.src = "https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js";
+    sc.onload = ok; sc.onerror = () => ng(new Error("load"));
+    document.head.append(sc);
+  });
+}
+function hangUp() { try { ON.conn && ON.conn.close(); ON.peer && ON.peer.destroy(); } catch {} ON.conn = ON.peer = null; }
+function onlineStatus() {
+  const n = G.n, me = ON.mine.has(n), op = ON.theirs.has(n);
+  $("oOpp").hidden = false;
+  $("oOpp").textContent = op ? (me ? "" : "⚡ 상대가 먼저 답했어요! · 相手がもう答えました！") : me ? "⏳ 상대를 기다리는 중… · 相手を待っています…" : "";
+  $("gNext").hidden = !(me && op);
+}
+function bubble(text) {
+  const b = document.createElement("div"); b.className = "bubble"; b.textContent = text;
+  document.body.append(b); setTimeout(() => b.remove(), 2200);
+}
+// 상대 언어도 함께 보이는 짧은 리액션 (서로의 말을 자연스럽게 접하게)
+const EMOTES = ["👏 대박! · すごい！", "😂 ㅋㅋㅋ · www", "😭 아깝다 · 惜しい", "🔥 잘한다 · 上手！", "🙏 고마워 · ありがとう", "👋 안녕 · よろしく"];
+$("oEmotes").innerHTML = EMOTES.map(e => `<button>${e}</button>`).join("");
+$("oEmotes").onclick = e => { const b = e.target.closest("button"); if (b) { send({ t: "emote", e: b.textContent }); bubble("나 · 私: " + b.textContent); } };
+function wire(conn) {
+  ON.conn = conn;
+  conn.on("data", m => {
+    if (m.t === "hello") { ON.side = m.side === "ko" ? "ja" : "ko"; oMsg(ON.side === "ko" ? "연결됐어요! 상대는 🇯🇵 일본인이에요" : "接続しました！相手は🇰🇷韓国人です"); }
+    if (m.t === "start") { ON.mine.clear(); ON.theirs.clear(); startGame("online", m.qs); bubble("🎮 시작! · スタート！"); }
+    if (m.t === "a") { ON.theirs.add(m.n); G.score[ON.side === "ko" ? "ja" : "ko"] = m.score; showScore(); if (m.n === G.n) onlineStatus(); }
+    if (m.t === "next" && m.n === G.n && !$("gPlay").hidden) nextQ();
+    if (m.t === "emote") bubble("상대 · 相手: " + m.e);
+  });
+  conn.on("close", () => { if (ON.conn === conn) { bubble("연결 끊김 · 切断されました"); oMsg("상대와 연결이 끊겼어요 · 相手との接続が切れました"); } });
+}
+async function host(side) {
+  hangUp(); ON.side = side;
+  oMsg("준비 중… · 準備中…");
+  try { await loadPeer(); } catch { return oMsg("온라인 기능을 불러오지 못했어요 · 読み込めませんでした"); }
+  const code = String(Math.floor(1000 + Math.random() * 9000));
+  const peer = ON.peer = new Peer(PREFIX + code);
+  peer.on("open", () => { oMsg(`이 코드를 상대에게 보내 주세요 · このコードを送ってください<span class="code">${code}</span><button id="oShare">🔗 초대 링크 보내기 · 招待リンクを送る</button><br>⏳ 기다리는 중 · 待機中`); shareBtn(code); });
+  peer.on("error", e => e.type === "unavailable-id" ? host(side) : oMsg("연결 오류 · 接続エラー (" + e.type + ")"));
+  peer.on("connection", conn => {
+    if (ON.conn && ON.conn.open) return conn.close();  // 1:1만
+    wire(conn);
+    conn.on("open", () => {
+      send({ t: "hello", side });
+      ON.mine.clear(); ON.theirs.clear();
+      const qs = makeQs(); send({ t: "start", qs }); startGame("online", qs);
+      bubble(side === "ko" ? "🇯🇵 일본인 친구가 들어왔어요!" : "🇰🇷 韓国人の友達が来ました！");
+    });
+  });
+}
+function shareBtn(code) {
+  const url = location.origin + location.pathname + "?room=" + code;
+  const text = "한·일 단어 대결 하자! · 日韓単語バトルしよう！ " + url;
+  $("oShare").onclick = async () => {
+    try { if (navigator.share) return await navigator.share({ text }); await navigator.clipboard.writeText(text); bubble("링크 복사됨 · コピーしました"); }
+    catch { prompt("링크 · リンク", url); }
+  };
+}
+async function join() {
+  const code = $("oCode").value.trim();
+  if (!/^\d{4}$/.test(code)) return oMsg("4자리 숫자를 넣어 주세요 · 4桁の数字を入れてください");
+  hangUp(); oMsg("연결 중… · 接続中…");
+  try { await loadPeer(); } catch { return oMsg("온라인 기능을 불러오지 못했어요 · 読み込めませんでした"); }
+  const peer = ON.peer = new Peer();
+  peer.on("error", e => oMsg(e.type === "peer-unavailable" ? "방을 찾을 수 없어요 · 部屋が見つかりません" : "연결 오류 · 接続エラー (" + e.type + ")"));
+  peer.on("open", () => wire(peer.connect(PREFIX + code, { reliable: true })));
+}
+document.querySelectorAll("[data-host]").forEach(b => b.onclick = () => host(b.dataset.host));
+$("oJoin").onclick = join;
+// 초대 링크 (?room=1234) 로 들어오면 바로 게임 탭 + 코드 입력
+// 친구랑 내기: 언어를 전혀 몰라도 소리로 맞힐 수 있는 단어 (외래어 + 같은 한자어)
+// [그림, 일본어, 일본어 읽기(한글), 한국어, 한국어 읽기(가나), 한자]
+const EZ = [
+  ["☕","コーヒー","코-히-","커피","コピ"], ["🍰","ケーキ","케-키","케이크","ケイク"], ["🍕","ピザ","피자","피자","ピジャ"],
+  ["🍔","ハンバーガー","함바-가-","햄버거","ヘムボゴ"], ["🍌","バナナ","바나나","바나나","バナナ"], ["🍫","チョコレート","초코레-토","초콜릿","チョコルリッ"],
+  ["🍦","アイスクリーム","아이스쿠리-무","아이스크림","アイスクリム"], ["🧃","ジュース","쥬-스","주스","ジュス"], ["📺","テレビ","테레비","텔레비전","テルレビジョン"],
+  ["🚌","バス","바스","버스","ボス"], ["🚕","タクシー","타쿠시-","택시","テクシ"], ["🏨","ホテル","호테루","호텔","ホテル"],
+  ["🎸","ギター","기타-","기타","ギタ"], ["🎹","ピアノ","피아노","피아노","ピアノ"], ["📷","カメラ","카메라","카메라","カメラ"],
+  ["🍅","トマト","토마토","토마토","トマト"], ["🍋","レモン","레몬","레몬","レモン"], ["🥗","サラダ","사라다","샐러드","セルロドゥ"],
+  ["🎮","ゲーム","게-무","게임","ゲイム"], ["🐧","ペンギン","펭긴","펭귄","ペングィン"], ["🍷","ワイン","와인","와인","ワイン"],
+  ["🥤","コーラ","코-라","콜라","コルラ"], ["🛋️","かぐ","카구","가구","カグ","家具"], ["🆓","むりょう","무료-","무료","ムリョ","無料"],
+  ["🍳","りょうり","료-리","요리","ヨリ","料理"], ["🌡️","おんど","온도","온도","オンド","温度"], ["🛣️","どうろ","도-로","도로","トロ","道路"],
+  ["👜","かばん","카방","가방","カバン","鞄"],
+];
+const CN = 10, HINT_MS = 3000;
+// 같은 링크를 받은 친구가 똑같은 문제를 풀도록 시드 고정 난수
+const rng = seed => () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+const shuf = (arr, r) => { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const C = { lang: "ko", seed: 0, qs: [], n: 0, right: 0, t0: 0, clock: null, hint: null, rival: null, log: [] };
+function chStart(lang, seed = Math.floor(Math.random() * 1e9), rival = null) {
+  const r = rng(seed), idx = EZ.map((_, i) => i);
+  Object.assign(C, { lang, seed, rival, n: 0, right: 0, log: [],
+    qs: shuf(idx, r).slice(0, CN).map(w => ({ w, opts: shuf([w, ...shuf(idx.filter(i => i !== w), r).slice(0, 3)], r) })) });
+  C.t0 = performance.now();
+  clearInterval(C.clock);
+  C.clock = setInterval(() => $("cClock").textContent = ((performance.now() - C.t0) / 1000).toFixed(1) + (lang === "ko" ? "초" : "秒"), 100);
+  view("cPlay"); chAsk();
+}
+function chAsk() {
+  const { w, opts } = C.qs[C.n], e = EZ[w], ko = C.lang === "ko";
+  const word = ko ? e[1] : e[3], read = ko ? e[2] : e[4], tl = ko ? "ja" : "ko";
+  $("cPos").textContent = `${C.n + 1} / ${CN}` + (C.rival ? ` · ${ko ? "친구 기록" : "友達の記録"} ${C.rival.right}/${CN}, ${C.rival.sec}${ko ? "초" : "秒"}` : "");
+  $("cQ").innerHTML = `<div class="big">${word}${say(word, tl)}</div><div class="ex" style="margin-top:8px">${ko ? "🔊 소리를 듣고 무엇인지 골라 보세요" : "🔊 音を聞いて何か選んでください"}</div><div class="hint" id="cHint"></div>`;
+  $("cChoices").innerHTML = opts.map(o => `<button data-o="${o}" aria-label="${ko ? EZ[o][3] : EZ[o][1]}">${EZ[o][0]}</button>`).join("");
+  if ("speechSynthesis" in window) speak(word, tl);
+  // 3초가 지나면 읽는 법 힌트 (모국어 글자로)
+  clearTimeout(C.hint);
+  C.hint = setTimeout(() => $("cHint").textContent = "💡 " + read, HINT_MS);
+}
+$("cChoices").onclick = ev => {
+  const b = ev.target.closest("button"); if (!b || b.disabled) return;
+  clearTimeout(C.hint);
+  const { w } = C.qs[C.n], e = EZ[w], ok = +b.dataset.o === w, ko = C.lang === "ko";
+  if (ok) C.right++;
+  C.log.push({ w, ok });
+  $("cChoices").querySelectorAll("button").forEach(x => { x.disabled = true; if (+x.dataset.o === w) x.classList.add("ok"); });
+  if (!ok) b.classList.add("ng");
+  $("cHint").innerHTML = `${ok ? "⭕" : "❌"} ${e[0]} ${e[1]}${e[5] ? ` (${e[5]})` : ""} = ${e[3]}`;
+  setTimeout(() => { C.n++; C.n < CN ? chAsk() : chEnd(); }, ok ? 700 : 1400);
+};
+function chEnd() {
+  clearInterval(C.clock); clearTimeout(C.hint);
+  const sec = ((performance.now() - C.t0) / 1000).toFixed(1), ko = C.lang === "ko";
+  C.sec = sec;
+  let vs = "";
+  if (C.rival) {
+    const win = C.right > C.rival.right || (C.right === C.rival.right && +sec < +C.rival.sec);
+    const tie = C.right === C.rival.right && sec === C.rival.sec;
+    vs = `<div style="font-size:1.5rem;margin-top:8px">${tie ? (ko ? "🤝 무승부!" : "🤝 引き分け！") : win ? (ko ? "🏆 친구를 이겼어요!" : "🏆 友達に勝った！") : (ko ? "😭 졌어요… 다시 도전!" : "😭 負けた…もう一回！")}</div>
+      <div class="ex">${ko ? "친구" : "友達"} ${C.rival.right}/${CN} · ${C.rival.sec}${ko ? "초" : "秒"}</div>`;
+  }
+  $("cResult").innerHTML = `<div style="font-size:2.4rem">${C.right}/${CN}</div><div>⏱ ${sec}${ko ? "초" : "秒"}</div>${vs}
+    <div class="ex" style="margin-top:10px">${ko ? `방금 일본어 단어 ${CN}개를 들었어요!` : `いま韓国語の単語を${CN}個聞きました！`}</div>`;
+  $("cLearnedT").textContent = ko ? "📒 오늘 만난 일본어" : "📒 今日出会った韓国語";
+  $("cLearned").innerHTML = C.log.map(({ w, ok }) => { const e = EZ[w], t = ko ? e[1] : e[3];
+    return `<div class="phrase">${ok ? "⭕" : "❌"} ${e[0]} <b>${t}</b>${say(t, ko ? "ja" : "ko")} <span class="ko">${ko ? e[2] : e[4]}${e[5] ? " · " + e[5] : ""} = ${ko ? e[3] : e[1]}</span></div>`; }).join("");
+  if (window.Rec) Rec.game("bet-" + C.lang, C.right, { ko: "친구랑 내기 (맞힌 수)", ja: "友達と勝負（正解数）" });
+  view("cEnd");
+}
+$("cShare").onclick = async () => {
+  const ko = C.lang === "ko";
+  const url = `${location.origin}${location.pathname}?ch=${C.lang}.${C.seed}.${C.right}.${C.sec}`;
+  const text = ko ? `일본어 하나도 몰라도 맞힐 수 있대! 나는 ${C.right}/${CN}, ${C.sec}초 🎯 너는 이길 수 있어? ${url}`
+                  : `韓国語まったく知らなくても分かるらしい！私は${C.right}/${CN}、${C.sec}秒 🎯 勝てる？ ${url}`;
+  try { if (navigator.share) return await navigator.share({ text }); await navigator.clipboard.writeText(text); bubble(ko ? "도전장 복사됨! 친구에게 붙여넣기 하세요" : "コピーしました！友達に送ってね"); }
+  catch { prompt(ko ? "도전장 링크" : "挑戦状リンク", text); }
+};
+$("cAgain").onclick = () => chStart(C.lang);
+$("cMenu").onclick = () => { clearInterval(C.clock); view("gSetup"); };
+document.querySelectorAll("[data-ch]").forEach(b => b.onclick = () => chStart(b.dataset.ch));
+// 도전장 링크 (?ch=언어.시드.맞힌수.초) 로 들어오면 같은 문제로 바로 도전
+const ch = new URLSearchParams(location.search).get("ch");
+if (ch) {
+  const [lang, seed, right, sec] = ch.split(".").length === 5 ? (([a, b, c, d, e]) => [a, b, c, d + "." + e])(ch.split(".")) : ch.split(".");
+  if ((lang === "ko" || lang === "ja") && /^\d+$/.test(seed) && /^\d+$/.test(right) && /^[\d.]+$/.test(sec)) {
+    document.querySelector('[data-tab=game]').click();
+    const ko = lang === "ko";
+    $("cInvite").hidden = false;
+    $("cInvite").innerHTML = `${ko ? `📨 친구가 도전장을 보냈어요! 기록 ${right}/${CN}, ${sec}초` : `📨 友達から挑戦状！記録 ${right}/${CN}、${sec}秒`}<br><button id="cAccept">${ko ? "도전하기 🔥" : "挑戦する 🔥"}</button>`;
+    $("cAccept").onclick = () => chStart(lang, +seed, { right: +right, sec });
+  }
+}
+// 갈림길 러너: 위에서 내려오는 두 문 중 맞는 뜻 쪽으로 무리를 옮기면 인원이 늘어남
+const R = { on: false };
+const RGATES = 15;
+const rBestGet = () => { try { return JSON.parse(localStorage.getItem("jp-run-best")) || {}; } catch { return {}; } };
+const rShowBest = () => { const b = rBestGet(); $("rBest").textContent = `최고 기록 · ベスト: 🇰🇷 ${Math.max(b["ko.easy"] || 0, b["ko.normal"] || 0)}명 / 🇯🇵 ${Math.max(b["ja.easy"] || 0, b["ja.normal"] || 0)}人`; };
+// 문제 1개: { q: 문제 글자, read: 발음 힌트, tl: 읽기 언어, opts: [왼쪽, 오른쪽] 표시 글자, ok: 정답 쪽(0/1), learn: 정답 설명 }
+function rMakeQ() {
+  const [lang, diff] = R.key.split("."), ko = lang === "ko", r = Math.random;
+  if (diff === "easy") {
+    const w = Math.floor(r() * EZ.length); let o; do o = Math.floor(r() * EZ.length); while (o === w);
+    const e = EZ[w], ok = r() < .5 ? 0 : 1, opts = ok ? [EZ[o][0], e[0]] : [e[0], EZ[o][0]];
+    return { q: ko ? e[1] : e[3], read: ko ? e[2] : e[4], tl: ko ? "ja" : "ko", opts, ok, emoji: true,
+      learn: `${e[0]} ${e[1]}${e[5] ? ` (${e[5]})` : ""} · ${e[3]}`, sayT: ko ? e[1] : e[3] };
+  }
+  const w = Math.floor(r() * W.length); let o; do o = Math.floor(r() * W.length); while (o === w);
+  const label = i => ko ? W[i][2].split(",")[0] : W[i][0];
+  const ok = r() < .5 ? 0 : 1, opts = ok ? [label(o), label(w)] : [label(w), label(o)];
+  const [jp, yomi, kom] = W[w];
+  return { q: ko ? jp : KR[jp][0], read: ko ? yomi : KR[jp][1], tl: ko ? "ja" : "ko", opts, ok,
+    learn: `${jp} (${yomi}) · ${KR[jp][0]} (${KR[jp][1]})${kom === KR[jp][0] ? "" : " · " + kom}`, sayT: ko ? jp : KR[jp][0] };
+}
+function rStart(key) {
+  Object.assign(R, { key, on: true, crowd: 5, x: .5, tx: .5, gate: null, n: 0, log: [], fx: [], scroll: 0, last: performance.now(), wait: .6 });
+  view("rPlay"); rResize(); requestAnimationFrame(rLoop);
+}
+function rResize() { const c = $("rCv"), d = devicePixelRatio || 1; c.width = c.clientWidth * d; c.height = c.clientHeight * d; }
+addEventListener("resize", () => R.on && rResize());
+function rSpawn() {
+  const q = rMakeQ();
+  // 점점 빨라짐: 5초 → 2.8초 동안 내려옴
+  R.gate = { ...q, y: 0, dur: Math.max(2.8, 5 - R.n * .15), t0: performance.now() };
+  if ("speechSynthesis" in window) speak(q.sayT, q.tl);
+}
+function rPass() {
+  const g = R.gate, side = R.x < .5 ? 0 : 1, right = side === g.ok;
+  const before = R.crowd;
+  // 20명 전까지는 +5~10, 그 뒤로는 ×1.5 (최대 999)
+  if (right) R.crowd = R.crowd < 20 ? R.crowd + 5 + Math.floor(Math.random() * 6) : Math.min(999, Math.round(R.crowd * 1.5));
+  else R.crowd = Math.max(0, R.crowd - Math.max(3, Math.ceil(R.crowd * .4)));
+  const d = R.crowd - before;
+  R.fx.push({ text: right ? (before >= 20 ? "×1.5" : "+" + d) : String(d), good: right, t: performance.now() });
+  R.log.push({ learn: g.learn, ok: right, sayT: g.sayT, tl: g.tl });
+  R.gate = null; R.n++; R.wait = .7;
+  if (R.crowd <= 0 || R.n >= RGATES) setTimeout(rEnd, 500);
+}
+function rLoop(now) {
+  if (!R.on) return;
+  const dt = Math.min(.05, (now - R.last) / 1000); R.last = now;
+  R.x += (R.tx - R.x) * Math.min(1, dt * 12);
+  R.scroll = (R.scroll + dt * 220) % 80;
+  if (!R.gate && R.n < RGATES && R.crowd > 0) { R.wait -= dt; if (R.wait <= 0) rSpawn(); }
+  if (R.gate) { R.gate.y = (now - R.gate.t0) / 1000 / R.gate.dur; if (R.gate.y >= 1) rPass(); }
+  rDraw(now);
+  requestAnimationFrame(rLoop);
+}
+function rDraw(now) {
+  const c = $("rCv"), x = c.getContext("2d"), d = devicePixelRatio || 1, Wd = c.width / d, H = c.height / d;
+  const css = getComputedStyle(document.documentElement), col = n => css.getPropertyValue(n).trim();
+  x.setTransform(d, 0, 0, d, 0, 0);
+  x.fillStyle = col("--card"); x.fillRect(0, 0, Wd, H);
+  // 길 가운데 점선
+  x.strokeStyle = col("--line"); x.lineWidth = 4; x.setLineDash([40, 40]); x.lineDashOffset = -R.scroll;
+  x.beginPath(); x.moveTo(Wd / 2, 0); x.lineTo(Wd / 2, H); x.stroke(); x.setLineDash([]);
+  const top = 70, py = H - 70;  // 문이 지나가는 구간: top → py
+  x.textAlign = "center"; x.textBaseline = "middle"; x.fillStyle = col("--text");
+  // 상단: 문제
+  const g = R.gate;
+  x.font = "600 15px system-ui,sans-serif"; x.fillStyle = col("--muted");
+  x.fillText(`${Math.min(R.n + 1, RGATES)} / ${RGATES}`, 34, 18);
+  if (g) {
+    x.fillStyle = col("--text"); x.font = "700 30px system-ui,sans-serif"; x.fillText(g.q, Wd / 2, 28);
+    // 절반쯤 내려오면 발음 힌트
+    if (g.y > .45) { x.fillStyle = col("--accent"); x.font = "600 16px system-ui,sans-serif"; x.fillText("💡 " + g.read, Wd / 2, 56); }
+    const gy = top + (py - 40 - top) * g.y, gh = 56;
+    [0, 1].forEach(s => {
+      const gx = s ? Wd / 2 + 6 : 6, gw = Wd / 2 - 12;
+      x.fillStyle = s ? "#4a8fe7cc" : "#e0a03acc";
+      x.beginPath(); x.roundRect(gx, gy, gw, gh, 10); x.fill();
+      x.fillStyle = "#fff"; x.font = g.emoji ? "34px system-ui,sans-serif" : "700 18px system-ui,sans-serif";
+      let t = g.opts[s]; while (!g.emoji && x.measureText(t).width > gw - 12 && t.length > 2) t = t.slice(0, -2) + "…";
+      x.fillText(t, gx + gw / 2, gy + gh / 2 + 1);
+    });
+  }
+  // 무리 (사람 수만큼 점, 많으면 일부만 그림)
+  const cx = 12 + R.x * (Wd - 24), shown = Math.min(R.crowd, 80);
+  for (let i = 0; i < shown; i++) {
+    const a = i * 2.4, rr = 7 * Math.sqrt(i);
+    const bob = Math.sin(now / 90 + i) * 1.5;
+    x.fillStyle = i % 2 ? col("--accent") : "#4a8fe7";
+    x.beginPath(); x.arc(cx + Math.cos(a) * rr, py + Math.sin(a) * rr * .5 + bob, 7, 0, 7); x.fill();
+  }
+  x.fillStyle = col("--text"); x.font = "700 18px system-ui,sans-serif";
+  x.fillText(`🏃 ${R.crowd}`, Math.min(Wd - 40, Math.max(40, cx)), py - 34 - Math.min(30, Math.sqrt(shown) * 2));
+  // 효과 글자
+  R.fx = R.fx.filter(f => now - f.t < 900);
+  R.fx.forEach(f => { const k = (now - f.t) / 900; x.globalAlpha = 1 - k; x.fillStyle = f.good ? "#2f9e55" : col("--accent");
+    x.font = "800 34px system-ui,sans-serif"; x.fillText(f.text, Math.min(Wd - 40, Math.max(40, cx)), py - 70 - k * 40); x.globalAlpha = 1; });
+}
+function rEnd() {
+  if (!R.on) return;
+  R.on = false;
+  const ko = R.key.startsWith("ko"), b = rBestGet(), right = R.log.filter(l => l.ok).length;
+  const nb = R.crowd > (b[R.key] || 0); if (nb) { b[R.key] = R.crowd; try { localStorage.setItem("jp-run-best", JSON.stringify(b)); } catch {} }
+  $("rResult").innerHTML = R.crowd <= 0
+    ? `<div style="font-size:2rem">😵 ${ko ? "모두 흩어졌어요!" : "みんな散らばった！"}</div><div class="back">${ko ? `${R.n}번째 문에서 끝` : `${R.n}個目のゲートで終了`}</div>`
+    : `<div style="font-size:2.4rem">🏁 ${R.crowd}${ko ? "명" : "人"}</div><div class="back">${nb ? (ko ? "🎉 최고 기록!" : "🎉 ベスト更新！") : ""} ${ko ? `정답 ${right}/${R.n}` : `正解 ${right}/${R.n}`}</div>`;
+  $("rLearnedT").textContent = ko ? "📒 지나온 단어" : "📒 通ってきた単語";
+  $("rLearned").innerHTML = R.log.map(l => `<div class="phrase">${l.ok ? "⭕" : "❌"} ${l.learn}${say(l.sayT, l.tl)}</div>`).join("");
+  if (window.Rec) Rec.game("run-" + R.key, R.crowd, { ko: `갈림길 러너 (${R.key.endsWith("easy") ? "쉬움" : "보통"})`, ja: `分かれ道ランナー（${R.key.endsWith("easy") ? "かんたん" : "ふつう"}）` });
+  rShowBest(); view("rEnd");
+}
+// 조작: 키보드 ←→ / 화면 누르거나 끌기
+addEventListener("keydown", e => {
+  if (!R.on) return;
+  if (e.key === "ArrowLeft" || e.key === "a") { R.tx = .25; e.preventDefault(); }
+  if (e.key === "ArrowRight" || e.key === "d") { R.tx = .75; e.preventDefault(); }
+});
+const rPoint = e => { if (!R.on) return; const b = $("rCv").getBoundingClientRect(); R.tx = Math.min(1, Math.max(0, (e.clientX - b.left) / b.width)); };
+$("rCv").addEventListener("pointerdown", e => { $("rCv").setPointerCapture(e.pointerId); rPoint(e); });
+$("rCv").addEventListener("pointermove", e => { if (e.buttons) rPoint(e); });
+document.querySelectorAll("[data-run]").forEach(b => b.onclick = () => rStart(b.dataset.run));
+$("rQuit").onclick = () => { R.on = false; rShowBest(); view("gSetup"); };
+$("rAgain").onclick = () => rStart(R.key);
+$("rMenu").onclick = () => view("gSetup");
+rShowBest();
+
+const room = new URLSearchParams(location.search).get("room");
+if (room) { $("oCode").value = room; document.querySelector('[data-tab=game]').click(); }
+document.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => startGame(b.dataset.mode));
+showBest();
+
 renderList();
 renderCard();
+
+// ── 홈: 이어서 하기, 메뉴 타일, 오늘의 단어, 글자 크기
+const TAB_NAME = { list:"단어장", flash:"카드", talk:"회화", listen:"듣기", rec:"기록", game:"게임" };
+const goTab = id => { const b = document.querySelector(`nav [data-tab="${id}"]`); if (b) { b.click(); scrollTo(0, 0); } };
+document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => goTab(b.dataset.go));
+if (document.querySelector('nav [data-tab="game"]')) $("tileGame").hidden = false;
+document.querySelectorAll("nav button").forEach(b => b.addEventListener("click", () => {
+  if (b.dataset.tab !== "home") try { localStorage.setItem("jp-last", b.dataset.tab); } catch {}
+  if (b.dataset.tab === "home") renderHome();
+}));
+function renderHome() {
+  let last; try { last = localStorage.getItem("jp-last"); } catch {}
+  if (last && TAB_NAME[last]) {
+    $("contT").textContent = "이어서 하기";
+    $("contS").textContent = last === "flash" ? `카드 ${i + 1}번째부터 · 외운 단어 ${done.size}개` : `${TAB_NAME[last]} 하던 곳으로 가요`;
+  }
+  $("cont").onclick = () => goTab(last && TAB_NAME[last] ? last : "list");
+  $("tileList").textContent = `${W.length}개 중 ${done.size}개 외움`;
+  const d = new Date(), w = W[(d.getFullYear() * 372 + d.getMonth() * 31 + d.getDate()) % W.length];
+  $("today").innerHTML = `<div><div class="jp" lang="ja">${w[0]}</div><span class="rd" lang="ja">${w[1]}</span><div style="margin-top:6px">${w[2]}</div></div>
+    <button class="say" data-say="${w[1]}" aria-label="읽기: ${w[1]}">🔊</button>`;
+}
+const setFs = v => {
+  document.documentElement.style.setProperty("--fs", v + "rem");
+  document.querySelectorAll("[data-fs]").forEach(b => b.setAttribute("aria-pressed", b.dataset.fs === String(v)));
+  try { localStorage.setItem("jp-fs", v); } catch {}
+};
+document.querySelectorAll("[data-fs]").forEach(b => b.onclick = () => setFs(b.dataset.fs));
+try { const v = localStorage.getItem("jp-fs"); if (v) setFs(v); } catch {}
+renderHome();
+</script>
+<script>
+// 일본 전철 버전: 머리·탭 머리·홈(차내 화면, 발차 안내판, 역 이름판)을 바꿔 그림
+document.querySelector("header").insertAdjacentHTML("beforeend", '<div class="stripe"></div><div class="tenji"></div>');
+
+// 가나 → 로마자 (역 이름판 표기용, 간단한 헵번식)
+const RO = {あ:"a",い:"i",う:"u",え:"e",お:"o",か:"ka",き:"ki",く:"ku",け:"ke",こ:"ko",が:"ga",ぎ:"gi",ぐ:"gu",げ:"ge",ご:"go",さ:"sa",し:"shi",す:"su",せ:"se",そ:"so",ざ:"za",じ:"ji",ず:"zu",ぜ:"ze",ぞ:"zo",た:"ta",ち:"chi",つ:"tsu",て:"te",と:"to",だ:"da",ぢ:"ji",づ:"zu",で:"de",ど:"do",な:"na",に:"ni",ぬ:"nu",ね:"ne",の:"no",は:"ha",ひ:"hi",ふ:"fu",へ:"he",ほ:"ho",ば:"ba",び:"bi",ぶ:"bu",べ:"be",ぼ:"bo",ぱ:"pa",ぴ:"pi",ぷ:"pu",ぺ:"pe",ぽ:"po",ま:"ma",み:"mi",む:"mu",め:"me",も:"mo",や:"ya",ゆ:"yu",よ:"yo",ら:"ra",り:"ri",る:"ru",れ:"re",ろ:"ro",わ:"wa",を:"o",ん:"n"};
+function romaji(k) {
+  let s = "";
+  for (let n = 0; n < k.length; n++) {
+    const c = k[n], y = { ゃ:"a", ゅ:"u", ょ:"o" }[k[n + 1]];
+    if (c === "っ") { const nx = RO[k[n + 1]] || ""; s += nx[0] === "c" ? "t" : nx[0] || ""; continue; }
+    let r = RO[c] ?? c;
+    if (y) { r = /^(shi|chi|ji)$/.test(r) ? r.slice(0, -1) + y : r.slice(0, -1) + "y" + y; n++; }
+    s += r;
+  }
+  return s.replace(/ou|oo/g, "ō").replace(/uu/g, "ū").replace(/^./, m => m.toUpperCase());
+}
+
+// 탭 머리: 미니 역 이름판
+const LINES = { list:["T","01","단어장","単語帳 · Tango-chō"], flash:["C","02","카드","カード · Kādo"], talk:["K","03","상황 회화","会話 · Kaiwa"],
+  listen:["L","04","듣기","リスニング · Risuningu"], game:["G","05","게임","ゲーム · Gēmu"], rec:["R","06","내 기록","記録 · Kiroku"] };
+const lineh = id => { if ($(id).firstElementChild?.classList.contains("lineh")) return; const [c, n, ko, ja] = LINES[id];
+  $(id).insertAdjacentHTML("afterbegin", `<div class="lineh"><div class="in"><span class="no"><i>${c}</i><b>${n}</b></span><div><b class="n">${ko}</b><small>${ja}</small></div></div><div class="band"></div><div class="tenji"></div></div>`); };
+for (const id in LINES) { lineh(id); new MutationObserver(() => lineh(id)).observe($(id), { childList:true }); }
+
+// 이어서 하기 = 차내 안내 화면
+$("contT").insertAdjacentHTML("beforebegin", '<span class="nx">次は · 다음은 · Next</span>');
+// 문 차임 (누를 때만)
+function chime() {
+  try {
+    const a = chime.ctx || (chime.ctx = new (window.AudioContext || window.webkitAudioContext)());
+    [[659, 0], [523, .32]].forEach(([f, t]) => { const o = a.createOscillator(), g = a.createGain(); o.frequency.value = f; o.type = "sine";
+      g.gain.setValueAtTime(.0001, a.currentTime + t); g.gain.exponentialRampToValueAtTime(.18, a.currentTime + t + .02); g.gain.exponentialRampToValueAtTime(.0001, a.currentTime + t + .6);
+      o.connect(g).connect(a.destination); o.start(a.currentTime + t); o.stop(a.currentTime + t + .65); });
+  } catch {}
+}
+$("cont").addEventListener("click", chime);
+
+// 메뉴 = 발차 안내판
+const TRAINS = [["各停","--L-list","list","단어장","単語帳",1],["快速","--L-flash","flash","카드","カード",2],["急行","--L-talk","talk","상황 회화","会話",3],
+  ["普通","--L-listen","listen","듣기","リスニング",4],["特急","--L-game","game","게임","ゲーム",5],["準急","--L-rec","rec","내 기록","記録",6]];
+document.querySelector(".tiles").insertAdjacentHTML("afterend", `<div class="board" role="list">
+  <div class="bh"><span>種別 종류</span><span>行先 행선지</span><span>番線</span></div>
+  ${TRAINS.map(([k, c, id, ko, ja, p]) => `<button class="row" role="listitem" data-go2="${id}"><span class="kind" style="--c:var(${c})">${k}</span><span class="dest"><b>${ko} 行</b><small>${ja} 行き</small></span><span class="pl">${p}<small>番線</small></span></button>`).join("")}
+  <div class="ticker" aria-hidden="true"><span>まもなく 1番線に 各停 単語帳行きが まいります · 곧 1번 승강장에 단어장행 열차가 들어옵니다 · 黄色い線の内側でお待ちください · 노란 선 안쪽에서 기다려 주세요</span></div>
+</div>`);
+document.querySelectorAll("[data-go2]").forEach(b => b.onclick = () => goTab(b.dataset.go2));
+
+// 오늘의 단어 = 역 이름판
+const _homeBase = renderHome;
+renderHome = function () {
+  _homeBase();
+  const d = new Date(), n = (d.getFullYear() * 372 + d.getMonth() * 31 + d.getDate()) % W.length;
+  const w = W[n], p = W[(n + W.length - 1) % W.length], q = W[(n + 1) % W.length];
+  $("today").className = "eki";
+  $("today").innerHTML = `<div class="top2"><span class="no" style="--c:var(--L-list)"><i>T</i><b>${String(n + 1).padStart(2, "0")}</b></span>
+    <div class="nm"><div class="kn" lang="ja">${w[1]}</div><div class="kj" lang="ja">${w[0]}</div><div class="ro">${romaji(w[1])}</div><span class="ko">${w[2]}</span></div>
+    <button class="say" data-say="${w[1]}" aria-label="읽기: ${w[1]}">🔊</button></div>
+    <div class="band"><span>◀</span><span>▶</span></div>
+    <div class="pn"><span><b lang="ja">${p[0]}</b><small>${romaji(p[1])}</small></span><span><b lang="ja">${q[0]}</b><small>${romaji(q[1])}</small></span></div>`;
+};
+renderHome();
+
+$("gExit").onclick = () => {
+  if (!$("gPlay").hidden) $("gQuit").click();
+  else if (!$("rPlay").hidden) $("rQuit").click();
+  else { clearInterval(C.clock); clearTimeout(C.hint); view("gSetup"); }
+};
 </script>
 </body>
 </html>
