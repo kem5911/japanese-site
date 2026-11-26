@@ -377,6 +377,32 @@
   .dpick-row.days button { display:flex; flex-direction:column; align-items:center; line-height:1.15; border-radius:10px; min-width:64px; }
   .dpick-row.days small { font-weight:700; font-size:.72rem; opacity:.8; }
   .say.nat { position:relative; }
+  /* 단어장: Day 타일 + 한 장씩 카드 */
+  .vtitle { text-align:center; margin:18px 0 4px; font-size:1.5rem; }
+  .vsub { text-align:center; color:var(--muted); font-weight:700; margin:0 0 16px; font-size:.95rem; }
+  .daygrid { display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; }
+  .daygrid:has(> :only-child) { grid-template-columns:minmax(0, 160px); justify-content:center; }
+  .daytile { min-width:0; display:flex; flex-direction:column; align-items:center; gap:2px; padding:12px 4px 10px; border:2px solid var(--line); border-radius:16px; background:var(--card); color:var(--text); font:inherit; cursor:pointer; box-shadow:0 3px 0 var(--line); }
+  .daytile:active { transform:translateY(2px); box-shadow:0 1px 0 var(--line); }
+  .daytile small { color:var(--muted); font-weight:800; font-size:.8rem; }
+  .daytile b { font-size:1.7rem; font-weight:900; line-height:1.1; }
+  .daytile em { font-style:normal; font-size:.75rem; color:var(--muted); font-weight:700; }
+  .daytile .dprog { width:70%; height:6px; border-radius:3px; background:var(--line); overflow:hidden; margin-top:4px; }
+  .daytile .dprog i { display:block; height:100%; background:var(--lc, var(--accent)); }
+  .daytile.full { border-color:var(--lc, var(--accent)); }
+  .vtop { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+  .vexit { border:0; background:none; color:var(--muted); font:inherit; font-weight:800; font-size:1rem; cursor:pointer; padding:8px 4px; }
+  .vpill { display:inline-flex; gap:10px; align-items:center; padding:8px 16px; border-radius:999px; background:var(--card); border:2px solid var(--lc, var(--accent)); font-weight:900; font-size:.95rem; }
+  .vpill span { opacity:.4; }
+  .vcard { position:relative; min-height:340px; gap:6px; }
+  .vcard .vflip { position:absolute; right:14px; top:40px; opacity:.5; font-size:1.2rem; }
+  .vcard .jp { margin:6px 0; }
+  .vcard .vmean { font-size:1.5rem; font-weight:800; }
+  .vnav { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
+  .vnav button { min-height:52px; border-radius:12px; border:2px solid var(--line); background:var(--card); color:var(--text); font:inherit; font-weight:900; font-size:1.05rem; cursor:pointer; }
+  .vnav button:disabled { opacity:.4; cursor:default; }
+  .vmark { display:block; margin:10px auto 0; border:0; background:none; color:var(--muted); font:inherit; font-weight:800; cursor:pointer; padding:10px; }
+  .vmark.on { color:var(--lc, var(--accent)); }
 </style>
 </head>
 <body>
@@ -418,9 +444,18 @@
     <div class="today" id="today"></div>
   </section>
   <section id="list" hidden>
-    <div class="dpick" role="group" aria-label="단어장 고르기"></div>
-    <div class="bar"><span id="count"></span><label><input type="checkbox" id="hideDone"> 외운 단어 숨기기</label></div>
-    <div id="words"></div>
+    <div id="vPick">
+      <div class="dpick-row" id="vLv" role="group" aria-label="레벨"></div>
+      <h2 class="vtitle" id="vTitle"></h2>
+      <p class="vsub" id="vSub"></p>
+      <div class="daygrid" id="dayGrid"></div>
+    </div>
+    <div id="vStudy" hidden>
+      <div class="vtop"><button class="vexit" id="vExit">← 나가기</button><span class="vpill" id="vPill"></span></div>
+      <div class="flash vcard" id="vCard" role="button" tabindex="0" aria-live="polite"></div>
+      <div class="vnav"><button id="vPrev">이전</button><button id="vNext">다음</button></div>
+      <button class="vmark" id="vMark"></button>
+    </div>
     <p class="lis-credit" id="wordCredit"></p>
   </section>
 
@@ -1389,26 +1424,56 @@ document.addEventListener("click", e => {
   if (lv) deckSel = { lv: lv.dataset.lv, day: lv.dataset.lv === deckSel.lv ? deckSel.day : 1 };
   if (dy) deckSel = { lv: deckSel.lv, day: +dy.dataset.day };
   try { localStorage.setItem(DK_KEY, JSON.stringify(deckSel)); } catch {}
-  items = curItems(); order = items.map((_, n) => n); i = 0; flipped = false;
+  items = curItems(); order = items.map((_, n) => n); i = 0; flipped = false; V.open = false;
   renderPick(); renderList(); renderCard();
 });
 
-// 단어장
+// 단어장: ① 레벨 고르고 Day 타일 고르기 → ② 카드 한 장씩 (눌러서 뒤집기)
+const V = { open: false, n: 0, flip: false };
+const dayCount = () => deckSel.lv === "basic" ? 1 : DAYS;
+const dayItems = d => deckSel.lv === "basic" ? basicItems() : levelItems(deckSel.lv).slice((d - 1) * PER_DAY, d * PER_DAY);
 function renderList() {
-  const n = doneIn(items);
-  $("count").textContent = tr(`${deckName()} · 외운 단어 ${n} / ${items.length}`, `${deckName()} · 覚えた単語 ${n} / ${items.length}`);
-  $("words").innerHTML = "";
-  items.filter(it => !($("hideDone").checked && done.has(it.key))).forEach(it => {
-    const el = document.createElement("label");
-    el.className = "word" + (done.has(it.key) ? " done" : "");
-    el.innerHTML = `<input type="checkbox" ${done.has(it.key) ? "checked" : ""}>` + (JA
-      ? `<div><span class="jp kr" lang="ko">${esc(it.head)}</span>${sayBtn(it)}<span class="kt">${esc(it.read)}</span><div class="ex">${esc(it.mean)}</div></div>`
-      : `<div><span class="jp" lang="ja">${esc(it.head)}</span>${sayBtn(it)}${it.read ? `<span class="yomi" lang="ja">${esc(it.read)}</span>` : ""} — ${esc(it.mean)}${it.ex ? `<div class="ex">${it.ex}${say(it.ex)}</div>` : ""}</div>`);
-    el.querySelector("input").onchange = () => toggle(it.key);
-    $("words").append(el);
-  });
+  $("vPick").hidden = V.open; $("vStudy").hidden = !V.open;
+  if (!V.open) {
+    $("vLv").innerHTML = ["basic", ...LVLS].map(lv => `<button data-vlv="${lv}" aria-pressed="${deckSel.lv === lv}">${lvName(lv)}</button>`).join("");
+    const total = deckSel.lv === "basic" ? W.length : levelItems(deckSel.lv).length;
+    $("vTitle").textContent = deckSel.lv === "basic" ? tr("⭐ 기본 단어", "⭐ 基本の単語") : lvName(deckSel.lv);
+    $("vSub").textContent = deckSel.lv === "basic" ? tr(`${total}단어 · 눌러서 시작하세요`, `${total}語 · タップしてスタート`) : tr(`총 ${dayCount()}일 분량 (${total}단어). 공부할 Day를 고르세요.`, `全${dayCount()}日分（${total}語）。学習するDayを選んでください。`);
+    $("dayGrid").innerHTML = Array.from({ length: dayCount() }, (_, k) => {
+      const part = dayItems(k + 1), n = doneIn(part), full = n === part.length;
+      return `<button class="daytile${full ? " full" : ""}" data-vday="${k + 1}"><small>Day</small><b>${k + 1}</b><span class="dprog"><i style="width:${Math.round(n / part.length * 100)}%"></i></span><em>${full ? "✅" : `${n}/${part.length}`}</em></button>`;
+    }).join("");
+    return;
+  }
+  const L = items, it = L[V.n];
+  $("vPill").innerHTML = `<b>${deckSel.lv === "basic" ? tr("기본", "基本") : `Day ${deckSel.day}`}</b><span>|</span><b>${V.n + 1} / ${L.length}</b>`;
+  const hint = JA ? (V.flip ? "タップで単語に戻る" : "タップで意味を見る") : (V.flip ? "눌러서 단어로 돌아가기" : "눌러서 뜻 보기");
+  $("vCard").innerHTML = `<span class="vflip" aria-hidden="true">⟳</span>` + (!V.flip
+    ? `<div class="ex">${hint}</div><div class="jp${JA ? " kr" : ""}" lang="${JA ? "ko" : "ja"}">${esc(it.head)}</div>${sayBtn(it)}`
+    : `<div class="ex">${hint}</div><div class="back">${it.read ? `<b lang="${JA ? "ja" : "ja"}">${esc(it.read)}</b><br>` : ""}<span class="vmean">${esc(it.mean)}</span>${it.ex ? `<br><span class="ex">${it.ex}</span>` : ""}</div>${sayBtn(it)}`);
+  $("vPrev").disabled = V.n === 0;
+  $("vNext").textContent = V.n === L.length - 1 ? tr("끝 🎉", "おわり 🎉") : tr("다음", "次へ");
+  $("vMark").textContent = done.has(it.key) ? tr("✅ 외웠어요 (취소)", "✅ 覚えた（取り消す）") : tr("☐ 외웠어요", "☐ 覚えた");
+  $("vMark").classList.toggle("on", done.has(it.key));
 }
-$("hideDone").onchange = renderList;
+const vSave = () => { try { localStorage.setItem(DK_KEY, JSON.stringify(deckSel)); } catch {} };
+$("list").addEventListener("click", e => {
+  const lv = e.target.closest("[data-vlv]"), dy = e.target.closest("[data-vday]");
+  if (lv) { deckSel = { lv: lv.dataset.vlv, day: 1 }; vSave(); items = curItems(); order = items.map((_, n) => n); i = 0; renderPick(); renderCard(); renderList(); }
+  if (dy) { deckSel = { lv: deckSel.lv, day: +dy.dataset.vday }; vSave(); items = curItems(); order = items.map((_, n) => n); i = 0; renderPick(); renderCard(); Object.assign(V, { open: true, n: 0, flip: false }); renderList(); scrollTo(0, 0); }
+});
+$("vExit").textContent = tr("← 나가기", "← もどる"); $("vPrev").textContent = tr("이전", "前へ");
+$("vExit").onclick = () => { V.open = false; renderList(); scrollTo(0, 0); };
+$("vCard").onclick = () => { V.flip = !V.flip; renderList(); if (V.flip && window.Rec) Rec.card(); };
+$("vCard").onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("vCard").click(); } };
+$("vPrev").onclick = () => { if (V.n > 0) { V.n--; V.flip = false; renderList(); } };
+$("vNext").onclick = () => { if (V.n < items.length - 1) { V.n++; V.flip = false; renderList(); } else { V.open = false; renderList(); scrollTo(0, 0); } };
+$("vMark").onclick = () => toggle(items[V.n].key);
+// 카드를 좌우로 밀어도 넘어가기
+(() => { let x0 = null; const c = $("vCard");
+  c.addEventListener("touchstart", e => { x0 = e.touches[0].clientX; }, { passive: true });
+  c.addEventListener("touchend", e => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 60) { e.preventDefault(); (dx < 0 ? $("vNext") : $("vPrev")).click(); } });
+})();
 
 // 플래시카드
 let order = items.map((_, n) => n), i = 0, flipped = false;
