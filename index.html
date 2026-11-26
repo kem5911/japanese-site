@@ -640,7 +640,52 @@ const T = {
 };
 
 // 듣기 모드: Tatoeba 원어민 녹음 [문장ID, 녹음자, 일본어, 한국어]
-const L = [
+// 日本人向け: 韓国語ネイティブ録音 (Lingua Libre / Wikimedia Commons, 録音: HappyMidnight, CC BY-SA 4.0)。[音声URL, 録音者, 韓国語, 日本語訳]
+const KO_L = [
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EB%AC%B4%EC%8A%A8_%EC%9D%BC%EC%9D%B4%EC%95%BC%3F.wav", "HappyMidnight", "무슨 일이야?", "どうしたの？"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EB%82%98%EC%9D%B4%EA%B0%80_%EC%96%B4%EB%96%BB%EA%B2%8C_%EB%90%98%EC%84%B8%EC%9A%94%3F.wav", "HappyMidnight", "나이가 어떻게 되세요?", "おいくつですか？"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EC%84%B1%ED%95%A8%EC%9D%B4_%EC%96%B4%EB%96%BB%EA%B2%8C_%EB%90%98%EC%84%B8%EC%9A%94%3F.wav", "HappyMidnight", "성함이 어떻게 되세요?", "お名前は何とおっしゃいますか？"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EC%96%B8%EC%A0%9C_%ED%95%9C%EA%B5%AD%EC%97%90_%EB%8F%8C%EC%95%84%EA%B0%80%EC%9A%94%3F.wav", "HappyMidnight", "언제 한국에 돌아가요?", "いつ韓国に帰りますか？"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%ED%95%9C%EA%B5%AD%EC%9D%98_%EB%82%A0%EC%94%A8%EB%8A%94_%EC%96%B4%EB%95%8C%EC%9A%94%3F.wav", "HappyMidnight", "한국의 날씨는 어때요?", "韓国の天気はどうですか？"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EC%84%9C%EC%9A%B8%EC%9D%98_%EB%82%A0%EC%94%A8%EB%8A%94_%EC%96%B4%EB%95%8C%EC%9A%94%3F.wav", "HappyMidnight", "서울의 날씨는 어때요?", "ソウルの天気はどうですか？"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%ED%95%9C%EA%B5%AD%EC%9D%80_%EC%A7%80%EA%B8%88_%EB%B9%84%EA%B0%80_%EC%99%80%EC%9A%94..wav", "HappyMidnight", "한국은 지금 비가 와요.", "韓国は今、雨が降っています。"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EC%84%9C%EC%9A%B8%EC%9D%80_%EC%A7%80%EA%B8%88_%EB%B0%94%EB%9E%8C%EC%9D%B4_%EB%A7%8E%EC%9D%B4_%EB%B6%88%EC%96%B4%EC%9A%94..wav", "HappyMidnight", "서울은 지금 바람이 많이 불어요.", "ソウルは今、風が強いです。"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EB%B6%80%EC%82%B0%EC%97%90%EB%8A%94_%EC%96%B4%EC%A0%9C_%EB%B9%84%EA%B0%80_%EC%99%94%EC%96%B4%EC%9A%94..wav", "HappyMidnight", "부산에는 어제 비가 왔어요.", "釜山では昨日雨が降りました。"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EC%A0%9C%EC%A3%BC%EB%8F%84%EB%8A%94_%EC%9A%94%EC%A6%98_%EB%B9%84%EA%B0%80_%EB%A7%8E%EC%9D%B4_%EC%99%80%EC%9A%94%3F.wav", "HappyMidnight", "제주도는 요즘 비가 많이 와요?", "済州島は最近雨が多いですか？"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%ED%95%9C%EA%B5%AD%EC%97%90%EB%8A%94_%EB%AA%87_%EC%9B%94%EC%97%90_%EB%88%88%EC%9D%B4_%EC%99%80%EC%9A%94%3F.wav", "HappyMidnight", "한국에는 몇 월에 눈이 와요?", "韓国では何月に雪が降りますか？"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EB%88%88_%EC%98%A4%EB%8A%94_%EA%B1%B0_%EC%A2%8B%EC%95%84%ED%95%B4%EC%9A%94%3F.wav", "HappyMidnight", "눈 오는 거 좋아해요?", "雪が降るのは好きですか？"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EC%96%B4%EB%8A%90_%EA%B3%84%EC%A0%88%EC%9D%84_%EC%A2%8B%EC%95%84%ED%95%98%EC%84%B8%EC%9A%94%3F.wav", "HappyMidnight", "어느 계절을 좋아하세요?", "どの季節が好きですか？"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EC%97%AC%EB%A6%84%EC%97%90%EB%8A%94_%ED%96%87%EB%B3%95%EC%9D%B4_%EB%84%88%EB%AC%B4_%EA%B0%95%ED%95%B4%EC%9A%94..wav", "HappyMidnight", "여름에는 햇볕이 너무 강해요.", "夏は日差しが強すぎます。"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EB%8D%94%EC%9A%B4_%EB%82%A0%EC%94%A8%EC%97%90%EB%8A%94_%EC%9D%B5%EC%88%99%ED%95%B4%EC%A1%8C%EC%96%B4%EC%9A%94%3F.wav", "HappyMidnight", "더운 날씨에는 익숙해졌어요?", "暑さには慣れましたか？"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EC%A0%80%EA%B8%B0%EA%B0%80_%EB%86%80%EA%B8%B0_%EC%A2%8B%EC%95%84%EC%9A%94%3F.wav", "HappyMidnight", "저기가 놀기 좋아요?", "あそこは遊ぶのにいいですか？"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EC%A0%80%EA%B8%B0%EA%B0%80_%EC%9E%AC%EB%AF%B8%EC%9E%88%EC%96%B4%EC%9A%94%3F.wav", "HappyMidnight", "저기가 재미있어요?", "あそこは楽しいですか？"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EB%A7%8E%EC%9D%80_%EC%82%AC%EB%9E%8C%EC%9D%B4_%EA%B0%80%EC%9A%94%3F.wav", "HappyMidnight", "많은 사람이 가요?", "たくさんの人が行きますか？"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EC%A0%80%EB%A5%BC_%EB%8D%B0%EB%A6%AC%EA%B3%A0_%EA%B0%88_%EC%88%98_%EC%9E%88%EC%96%B4%EC%9A%94%3F.wav", "HappyMidnight", "저를 데리고 갈 수 있어요?", "私を連れて行ってくれますか？"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EA%B0%99%EC%9D%B4_%EA%B0%88_%EC%88%98_%EC%9E%88%EB%82%98%EC%9A%94%3F.wav", "HappyMidnight", "같이 갈 수 있나요?", "一緒に行けますか？"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EC%96%B8%EC%A0%9C_%EB%8F%8C%EC%95%84%EC%98%AC_%EA%B1%B0%EC%98%88%EC%9A%94%3F.wav", "HappyMidnight", "언제 돌아올 거예요?", "いつ戻ってきますか？"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EB%8F%8C%EC%95%84%EC%98%AC_%EA%B1%B0%EC%98%88%EC%9A%94%3F.wav", "HappyMidnight", "돌아올 거예요?", "戻ってきますか？"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EA%B7%B8%EB%A6%AC%EA%B3%A0_%EC%96%B4%EB%94%94_%EA%B0%88_%EA%B1%B0%EC%98%88%EC%9A%94%3F.wav", "HappyMidnight", "그리고 어디 갈 거예요?", "それから、どこに行きますか？"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EC%95%88_%EB%8F%8C%EC%95%84%EA%B0%80%EB%8F%84_%EA%B4%9C%EC%B0%AE%EC%95%84%EC%9A%94%3F.wav", "HappyMidnight", "안 돌아가도 괜찮아요?", "帰らなくても大丈夫ですか？"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EB%8F%8C%EC%95%84%EA%B0%80%21.wav", "HappyMidnight", "돌아가!", "帰れ！／戻って！"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EB%8F%8C%EC%95%84%EC%99%80%21.wav", "HappyMidnight", "돌아와!", "戻ってきて！"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%ED%9A%8C%EC%82%AC%EC%97%90%EC%84%9C_%ED%98%B9%EC%8B%9C_%EC%96%B4%EB%96%A4_%EC%9D%BC_%ED%95%98%EC%84%B8%EC%9A%94%3F.wav", "HappyMidnight", "회사에서 혹시 어떤 일 하세요?", "会社ではどんなお仕事をされていますか？"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EB%8B%B9%EC%8B%A0%EC%9D%80_%EC%99%9C_%EC%9D%BC%EB%B3%B8%EC%97%90_%EA%B0%80%EC%9A%94%3F.wav", "HappyMidnight", "당신은 왜 일본에 가요?", "どうして日本に行くんですか？"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EB%8B%B9%EC%8B%A0%EC%9D%80_%EB%A9%B0%EC%B9%A0%EC%97%90_%EB%8F%84%EC%BF%84%EC%97%90_%EA%B0%80%EC%9A%94%3F.wav", "HappyMidnight", "당신은 며칠에 도쿄에 가요?", "何日に東京へ行きますか？"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EC%A0%80%EB%8A%94_%EC%A4%91%EA%B5%AD_%EC%82%AC%EB%9E%8C%EC%9D%B4_%EC%95%84%EB%8B%88%EB%9D%BC_%ED%95%9C%EA%B5%AD_%EC%82%AC%EB%9E%8C%EC%9D%B4%EC%97%90%EC%9A%94..wav", "HappyMidnight", "저는 중국 사람이 아니라 한국 사람이에요.", "私は中国人ではなく韓国人です。"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EC%A0%80%EB%8A%94_%EA%B8%B0%EB%B6%84%EC%9D%B4_%EB%A7%8E%EC%9D%B4_%EC%A2%8B%EC%95%84%EC%9A%94..wav", "HappyMidnight", "저는 기분이 많이 좋아요.", "とても気分がいいです。"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EC%A0%9C_%EA%B0%95%EC%95%84%EC%A7%80%EB%8A%94_%EB%88%88%EC%9D%84_%EC%A2%8B%EC%95%84%ED%95%B4%EC%9A%94..wav", "HappyMidnight", "제 강아지는 눈을 좋아해요.", "うちの犬は雪が好きです。"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EC%9D%B4_%EC%B1%85%EC%9D%B4_%EB%84%88%EB%AC%B4_%EB%91%90%EA%BA%BC%EC%9A%B4_%EA%B2%83_%EA%B0%99%EC%95%84%EC%9A%94..wav", "HappyMidnight", "이 책이 너무 두꺼운 것 같아요.", "この本は厚すぎる気がします。"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EC%9D%B4_%EC%BB%B4%ED%93%A8%ED%84%B0%EB%8A%94_%EA%B0%80%EA%B2%A9%EC%9D%B4_%EC%96%B4%EB%96%BB%EA%B2%8C_%EB%90%A9%EB%8B%88%EA%B9%8C%3F.wav", "HappyMidnight", "이 컴퓨터는 가격이 어떻게 됩니까?", "このパソコンはおいくらですか？"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EC%96%B4%EB%96%BB%EA%B2%8C_%EC%98%A4%EC%85%A8%EC%96%B4%EC%9A%94%3F.wav", "HappyMidnight", "어떻게 오셨어요?", "どういったご用件ですか？"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EB%84%A4_%EB%A7%90%EC%9D%B4_%EB%A7%9E%EB%8B%A4..wav", "HappyMidnight", "네 말이 맞다.", "君の言う通りだ。"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EC%9D%B4%EB%9F%B0_%EC%9D%BC%EC%9D%B4_%EC%9E%88%EC%9D%84_%EC%A4%84%EC%9D%80_%EB%AA%B0%EB%9E%90%EB%8B%A4..wav", "HappyMidnight", "이런 일이 있을 줄은 몰랐다.", "こんなことになるとは思わなかった。"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EC%98%9B%EB%82%A0_%EC%9D%BC%EC%9D%84_%EC%83%9D%EA%B0%81%ED%95%98%EB%8B%88_%EC%8A%AC%ED%94%84%EB%8B%A4..wav", "HappyMidnight", "옛날 일을 생각하니 슬프다.", "昔のことを思い出すと悲しい。"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EC%B0%A9%ED%95%9C_%EC%9D%BC%EC%9D%84_%ED%95%B4%EC%95%BC%EC%A7%80..wav", "HappyMidnight", "착한 일을 해야지.", "いいことをしなきゃね。"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EB%82%B4%EA%B0%80_%EA%B7%B8_%EC%8B%9C%ED%97%98%EC%97%90_%EC%96%B4%EB%96%BB%EA%B2%8C_%ED%86%B5%EA%B3%BC%ED%95%98%EC%A7%80%3F.wav", "HappyMidnight", "내가 그 시험에 어떻게 통과하지?", "あの試験、どうやって受かればいいんだろう？"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EA%B8%B0%EC%88%99%EC%82%AC%EB%8A%94_%EA%B5%90%EC%8B%A4%EC%97%90%EC%84%9C_%EB%A7%8E%EC%9D%B4_%EA%B0%80%EA%B9%8C%EC%9B%8C%EC%9A%94..wav", "HappyMidnight", "기숙사는 교실에서 많이 가까워요.", "寮は教室からとても近いです。"],
+  ["https://commons.wikimedia.org/wiki/Special:FilePath/LL-Q9176_%28kor%29-HappyMidnight-%EC%A7%80%EB%82%9C_%EC%A3%BC%EC%97%90_%EA%B7%B8%EB%8A%94_%EC%95%84%ED%8C%A0%EB%8A%94%EB%8D%B0%2C_%EC%A7%80%EA%B8%88%EC%9D%80_%EC%9D%B4%EB%AF%B8_%EC%A2%8B%EC%95%84%EC%A1%8C%EC%96%B4%EC%9A%94..wav", "HappyMidnight", "지난 주에 그는 아팠는데, 지금은 이미 좋아졌어요.", "先週彼は具合が悪かったけど、今はもう良くなりました。"]
+];
+let L = [
   [4751,"yomi","本当？","정말이야?"],
   [13193964,"fal","怖い。","무서워."],
   [7551811,"lowteq","痛い。","아파."],
@@ -720,7 +765,8 @@ const POD = [
     ["Dialogue #3 잘 지냈어요? (元気？)",130,"https://traffic.libsyn.com/secure/reallifekorean/Real-Life_Conversations_03.mp3?dest-id=1148357","https://reallifekorean.libsyn.com/dialogue-3-how-are-you"],
   ]},
 ];
-const LIS_AUDIO = id => `https://audio.tatoeba.org/sentences/jpn/${id}.mp3`;
+if (JA) L = KO_L;
+const LIS_AUDIO = id => /^https?:/.test(id) ? id : `https://audio.tatoeba.org/sentences/jpn/${id}.mp3`;
 console.assert(W.length === 50 && Object.values(T).every(t => t.length === 10), "데이터 개수 오류");
 
 // 외운 단어: 단어 문자열 목록을 브라우저에 저장
@@ -828,14 +874,14 @@ const lisCur = () => L[lis.order[lis.pos]];
 function lisShow() {
   const [id, , jp, ko] = lisCur(), hide = $("lisHide").checked;
   $("lisJp").textContent = jp;
-  $("lisKo").textContent = hide && lis.phase !== "reveal" ? "（뜻은 마지막에 보여요）" : ko;
+  $("lisKo").textContent = hide && lis.phase !== "reveal" ? tr("（뜻은 마지막에 보여요）", "（意味は最後に表示されます）") : ko;
   const reps = +$("lisRep").value;
   $("lisStep").textContent = !lis.playing ? `⏸ ${lis.pos + 1} / ${L.length}`
-    : lis.phase === "gap" ? "🗣 따라 말해 보세요" : lis.phase === "reveal" ? "💡 뜻 확인" : `🎧 듣는 중 ${Math.min(lis.rep + 1, reps)}/${reps} · ${lis.pos + 1} / ${L.length}`;
-  $("lisPlay").textContent = lis.playing ? "⏸ 일시정지" : "▶ 재생";
-  document.querySelectorAll("#lisList .phrase").forEach(p => p.classList.toggle("on", +p.dataset.id === id));
+    : lis.phase === "gap" ? tr("🗣 따라 말해 보세요", "🗣 まねして言ってみよう") : lis.phase === "reveal" ? tr("💡 뜻 확인", "💡 意味を確認") : `${tr("🎧 듣는 중", "🎧 再生中")} ${Math.min(lis.rep + 1, reps)}/${reps} · ${lis.pos + 1} / ${L.length}`;
+  $("lisPlay").textContent = lis.playing ? tr("⏸ 일시정지", "⏸ 一時停止") : tr("▶ 재생", "▶ 再生");
+  document.querySelectorAll("#lisList .phrase").forEach(p => p.classList.toggle("on", p.dataset.id === String(id)));
   if ("mediaSession" in navigator) {
-    navigator.mediaSession.metadata = new MediaMetadata({ title: jp, artist: hide && lis.phase !== "reveal" ? "듣기 모드" : ko, album: "🎧 일본어 듣기 모드" });
+    navigator.mediaSession.metadata = new MediaMetadata({ title: jp, artist: hide && lis.phase !== "reveal" ? tr("듣기 모드", "リスニング") : ko, album: tr("🎧 일본어 듣기 모드", "🎧 韓国語リスニング") });
     navigator.mediaSession.playbackState = lis.playing ? "playing" : "paused";
   }
 }
@@ -876,7 +922,7 @@ $("lisShuf").onchange = () => {
 $("lisList").innerHTML = L.map(([id, , jp, ko]) => `<div class="phrase" data-id="${id}"><div>${jp}</div><div class="ko">${ko}</div></div>`).join("");
 $("lisList").onclick = e => {
   const p = e.target.closest(".phrase"); if (!p) return;
-  lis.pos = lis.order.indexOf(L.findIndex(x => x[0] === +p.dataset.id));
+  lis.pos = lis.order.indexOf(L.findIndex(x => String(x[0]) === p.dataset.id));
   lis.playing = true; lisStart();
 };
 if ("mediaSession" in navigator) {
@@ -901,7 +947,10 @@ function segShow(podOn) {
 }
 $("segShort").onclick = () => segShow(false);
 $("segPod").onclick = () => segShow(true);
-if (JA) { segShow(true); document.querySelector("#listen .seg").hidden = true; }
+if (JA) {
+  document.querySelector("#lisShort .lis-step").textContent = "韓国語ネイティブが録音した声です（機械音声ではありません）。再生して画面を消しても流れ続けます。";
+  document.querySelector("#lisShort .lis-credit").innerHTML = '録音: HappyMidnight / <a href="https://lingualibre.org" target="_blank" rel="noopener">Lingua Libre</a>（<a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a>, CC BY-SA 4.0）· 日本語訳はこのアプリによるものです。';
+}
 $("podList").innerHTML = POD.map((s, si) => JA && s.lang !== "ko" ? "" :
   `<div class="pod-show">${s.lang === "ja" ? "🇯🇵" : "🇰🇷"} ${s.show} <a href="${s.home}" target="_blank" rel="noopener" aria-label="제작자 페이지">🔗</a><br><small>${s.note}</small></div>` +
   s.eps.map((e, ei) => `<div class="phrase pod-ep" data-s="${si}" data-e="${ei}"><span>${e[0]}</span><span class="dur">${e[1] ? fmt(e[1]) : ""}</span></div>`).join("")
@@ -1681,7 +1730,9 @@ if (JA) {
     "🔊 읽기 속도":"🔊 読み上げ速度","홈":"ホーム","단어장":"単語帳","카드":"カード","회화":"会話","듣기":"リスニング","기록":"記録","게임":"ゲーム",
     "시작하기":"はじめる","단어장부터 차근차근 시작해요":"単語帳から少しずつ始めましょう","오늘의 단어":"今日の単語",
     "외운 단어 숨기기":"覚えた単語をかくす","외운 단어 제외":"覚えた単語をのぞく","◀ 이전":"◀ 前へ","다음 ▶":"次へ ▶","🔀 섞기":"🔀 シャッフル",
-    "▶ 재생":"▶ 再生","⏪ 10초":"⏪ 10秒","10초 ⏩":"10秒 ⏩","🐢 속도":"🐢 速度","아래에서 에피소드를 고르세요":"下のエピソードを選んでください",
+    "▶ 재생":"▶ 再生","💬 짧은 문장":"💬 短い文","🎙 긴 회화 · 팟캐스트":"🎙 長い会話・ポッドキャスト","▶ 를 누르면 시작해요":"▶ を押すと始まります",
+    "🔁 한 문장 반복":"🔁 1文のくり返し","1번":"1回","2번":"2回","3번":"3回","🗣 따라 말할 틈":"🗣 まねする間","짧게 (1초)":"短め（1秒）","보통 (2.5초)":"ふつう（2.5秒）","길게 (4초)":"長め（4秒）",
+    "🔀 순서 섞기":"🔀 順番をシャッフル","🙈 뜻 가리기 (들리는 대로 맞혀 보기)":"🙈 意味をかくす（聞いて当ててみよう）","⏪ 10초":"⏪ 10秒","10초 ⏩":"10秒 ⏩","🐢 속도":"🐢 速度","아래에서 에피소드를 고르세요":"下のエピソードを選んでください",
     "원어민이 진행하는 학습자용 팟캐스트를 바로 틀어 줘요. 화면을 꺼도 계속 나오고, 들은 곳은 기억해 둬요.":"韓国語ネイティブの学習者向けポッドキャストをそのまま再生します。画面を消しても流れ続け、聞いたところを覚えておきます。",
     "모든 에피소드는 각 팟캐스트의 공식 공개 피드에서 그대로 재생돼요. 저작권은 각 제작자에게 있어요. 대본·단어장은 제작자 페이지(🔗)에서 확인하고, 마음에 들면 제작자를 응원해 주세요.":"各エピソードは公式の公開フィードからそのまま再生しています。著作権は各制作者にあります。台本や単語リストは制作者のページ（🔗）で確認できます。",
   };
