@@ -329,6 +329,21 @@ $("talk").innerHTML = Object.entries(T).map(([title, list]) =>
 const HANJA = { 経験:"경험", 準備:"준비", 説明:"설명", 必要:"필요", 約束:"약속", 予定:"예정", 機会:"기회", 状況:"상황", 影響:"영향", 解決:"해결",
   努力:"노력", 期待:"기대", 関係:"관계", 環境:"환경", 将来:"장래", 目的:"목적", 結果:"결과", 原因:"원인", 意見:"의견", 確認する:"확인", 正直:"정직", 突然:"돌연" };
 
+// 일본어 사용자용: 각 단어의 대표 한국어 한 단어 + 가타카나 발음
+const KR = {
+  経験:["경험","キョンホム"], 準備:["준비","チュンビ"], 説明:["설명","ソルミョン"], 必要:["필요","ピリョ"], 約束:["약속","ヤクソク"],
+  予定:["예정","イェジョン"], 機会:["기회","キフェ"], 状況:["상황","サンファン"], 影響:["영향","ヨンヒャン"], 解決:["해결","ヘギョル"],
+  努力:["노력","ノリョク"], 期待:["기대","キデ"], 関係:["관계","クァンゲ"], 環境:["환경","ファンギョン"], 将来:["장래","チャンネ"],
+  目的:["목적","モクチョク"], 結果:["결과","キョルグァ"], 原因:["원인","ウォニン"], 意見:["의견","ウィギョン"], 手続き:["절차","チョルチャ"],
+  申し込む:["신청하다","シンチョンハダ"], 断る:["거절하다","コジョラダ"], 届ける:["가져다주다","カジョダジュダ"], 比べる:["비교하다","ピギョハダ"], 続ける:["계속하다","ケソカダ"],
+  増える:["늘다","ヌルダ"], 減る:["줄다","チュルダ"], 迷う:["헤매다","ヘメダ"], 慣れる:["익숙해지다","イクスケジダ"], 預ける:["맡기다","マッキダ"],
+  間に合う:["시간에 맞추다","シガネ マッチュダ"], 片付ける:["정리하다","チョンニハダ"], 支払う:["지불하다","チブラダ"], 確認する:["확인하다","ファギナダ"], 我慢する:["참다","チャムタ"],
+  遠慮する:["사양하다","サヤンハダ"], 譲る:["양보하다","ヤンボハダ"], 戻る:["돌아오다","トラオダ"], 伝える:["전하다","チョナダ"], 集める:["모으다","モウダ"],
+  詳しい:["자세하다","チャセハダ"], 珍しい:["드물다","トゥムルダ"], 厳しい:["엄하다","オマダ"], 懐かしい:["그립다","クリプタ"], 恥ずかしい:["부끄럽다","プックロプタ"],
+  素直:["솔직함","ソルチカム"], 正直:["정직","チョンジク"], 大切:["소중함","ソジュンハム"], 突然:["갑자기","カプチャギ"], 相変わらず:["여전히","ヨジョニ"],
+};
+console.assert(W.every(w => KR[w[0]]), "KR 누락");
+
 // 게임: 한·일 단어 대결
 // side "ko" = 한국어 사용자(일본어 단어를 보고 한국어 뜻 고르기), "ja" = 日本語ユーザー(韓国語を見て日本語を選ぶ)
 const G = { mode: null, qs: [], n: 0, score: { ko: 0, ja: 0 }, timer: null, left: 0 };
@@ -351,7 +366,7 @@ function showScore(side) {
   $("gScore").textContent = G.mode === "duel" || G.mode === "online" ? `🇰🇷 ${G.score.ko} : ${G.score.ja} 🇯🇵` : `점수 · 得点 ${G.score[side]}`;
 }
 function ask() {
-  clearInterval(G.timer);
+  clearInterval(G.timer); clearTimeout(G.hint);
   const { w, side } = G.qs[G.n];
   const [jp, yomi, ko] = W[w];
   const opts = G.qs[G.n].opts;
@@ -360,7 +375,9 @@ function ask() {
   showScore(side);
   $("gQ").innerHTML = side === "ko"
     ? `<div class="jp">${jp}${say(jp)}</div><div class="ex" style="margin-top:12px">이 단어의 뜻은?</div>`
-    : `<div class="jp">${ko}${say(ko, "ko")}</div><div class="ex" style="margin-top:12px">この韓国語の意味は？</div>`;
+    : `<div class="jp">${KR[jp][0]}${say(KR[jp][0], "ko")}</div><div class="ex" style="margin-top:12px">この韓国語の意味は？</div><div class="hint" id="gHint"></div>`;
+  // 일본어 사용자: 3초 뒤 가타카나 발음 힌트
+  if (side === "ja") G.hint = setTimeout(() => $("gHint") && ($("gHint").textContent = "💡 " + KR[jp][1]), 3000);
   $("gChoices").innerHTML = "";
   opts.forEach(o => {
     const b = document.createElement("button");
@@ -382,6 +399,7 @@ function answer(o, btn) {
   const { w, side } = G.qs[G.n];
   const [jp, yomi, ko, ex] = W[w];
   const right = o === w;
+  clearTimeout(G.hint);
   if (right) G.score[side] += 100 + Math.round(G.left);  // 기본 100점 + 남은 시간 보너스(최대 100)
   $("gChoices").querySelectorAll("button").forEach(b => {
     b.disabled = true;
@@ -391,8 +409,8 @@ function answer(o, btn) {
   // 정답 공개: 양쪽 언어를 모두 보여 줘서 서로의 언어를 접하게 함
   $("gQ").innerHTML = `<div style="font-size:1.6rem">${right ? "⭕ 정답! 正解！" : o === null ? "⏰ 시간 초과 · 時間切れ" : "❌ 아쉬워요 · 残念"}</div>
     <div class="back"><span class="jp">${jp}</span>${say(jp)} <span class="yomi">${yomi}</span><br>
-    🇰🇷 ${ko}${say(ko, "ko")}<br><span class="ex">${ex}</span>${say(ex)}</div>` +
-    (HANJA[jp] ? `<div class="ex" style="margin-top:10px">💡 같은 한자어라 소리가 닮았어요 · 同じ漢字語で音が似ています<br><b>${jp.replace("する","")}</b> = ${HANJA[jp]} ≈ ${yomi.replace("する","")}${say(HANJA[jp], "ko")}</div>` : "");
+    🇰🇷 ${side === "ja" ? `${KR[jp][0]} <span class="yomi">${KR[jp][1]}</span>` : ko}${say(KR[jp][0], "ko")}<br><span class="ex">${ex}</span>${say(ex)}</div>` +
+    (HANJA[jp] ? `<div class="ex" style="margin-top:10px">💡 같은 한자어라 소리가 닮았어요 · 同じ漢字語で音が似ています<br><b>${jp.replace("する","")}</b> = ${HANJA[jp]} (${jp === "確認する" ? "ファギン" : KR[jp][1]}) ≈ ${yomi.replace("する","")}${say(HANJA[jp], "ko")}</div>` : "");
   showScore(side);
   if (G.mode === "online") { ON.mine.add(G.n); send({ t: "a", n: G.n, score: G.score[side] }); onlineStatus(); return; }
   $("gNext").hidden = false;
