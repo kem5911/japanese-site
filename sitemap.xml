@@ -1,4 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://kem5911.github.io/japanese-site/</loc><changefreq>weekly</changefreq></url>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://kem5911.github.io/japanese-site/</loc>
+    <lastmod>2026-11-26</lastmod>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://kem5911.github.io/japanese-site/?lang=ko"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://kem5911.github.io/japanese-site/?lang=ja"/>
+  </url>
+  <url>
+    <loc>https://kem5911.github.io/japanese-site/?lang=ja</loc>
+    <lastmod>2026-11-26</lastmod>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://kem5911.github.io/japanese-site/?lang=ko"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://kem5911.github.io/japanese-site/?lang=ja"/>
+  </url>
 </urlset>
