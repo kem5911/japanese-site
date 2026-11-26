@@ -18,7 +18,7 @@
 <meta property="og:locale" content="ko_KR">
 <meta property="og:locale:alternate" content="ja_JP">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=DotGothic16&family=Noto+Sans+KR:wght@400;700;800;900&family=Noto+Sans+JP:wght@400;700;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=DotGothic16&family=IBM+Plex+Mono:wght@500&family=Noto+Sans+KR:wght@400;700;800;900&family=Noto+Sans+JP:wght@400;700;900&display=swap">
 <style>
   :root { --bg:#f6f5f1; --card:#fff; --text:#222; --muted:#777; --accent:#c8374a; --line:#e3e0d8; --done:#e8f3ea; }
   @media (prefers-color-scheme: dark) { :root { --bg:#1b1b1d; --card:#26262a; --text:#eee; --muted:#999; --accent:#ff6b7f; --line:#3a3a3f; --done:#22352a; } }
@@ -2720,6 +2720,231 @@ const BBS_CFG = { apiKey: "AIzaSyD-vBMjGNhHYSZsZyxRlTlXZaazSoqJzRo", authDomain:
     ticker.insertAdjacentHTML("beforebegin", `<button class="row" role="listitem" data-go3="bbs"><span class="kind" style="--c:var(--L-bbs)">臨時</span><span class="dest"><b>${tr("게시판 行", "伝言板 行き")}</b><small>${tr("伝言板 行き", "게시판 행")}</small></span><span class="pl">7<small>番線</small></span></button>`);
     document.querySelector("[data-go3]").onclick = () => goTab("bbs");
   }
+})();
+</script>
+<style>
+  /* ── 2안 「종이 승차권」: 회청색 바탕 + 승차권 종이 + 남색 글자 + 빨간 도장 한 가지 ── */
+  :root { --bg:#e9eef1; --card:#fbfcfd; --text:#1f2a44; --muted:#66738c; --line:#d3dbe4; --done:#eef5ef;
+    --navy:#1f2a44; --ink:#c4413a; --accent:#c4413a; --next:#c4413a; --cut:#c3ccd8; --mono:"IBM Plex Mono",ui-monospace,monospace;
+    --L-home:#c4413a; --L-list:#c4413a; --L-flash:#c4413a; --L-talk:#c4413a; --L-listen:#c4413a; --L-rec:#c4413a; --L-game:#c4413a; --L-bbs:#c4413a; --lc:#c4413a; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#121822; --card:#1b2331; --text:#e7ecf4; --muted:#97a3b8; --line:#2b3547; --done:#1d2c24;
+    --navy:#e7ecf4; --ink:#ec6a5f; --accent:#ec6a5f; --next:#ec6a5f; --cut:#3a465b;
+    --L-home:#ec6a5f; --L-list:#ec6a5f; --L-flash:#ec6a5f; --L-talk:#ec6a5f; --L-listen:#ec6a5f; --L-rec:#ec6a5f; --L-game:#ec6a5f; --L-bbs:#ec6a5f; --lc:#ec6a5f; } }
+  body { font-family:"Noto Sans KR","Noto Sans JP",system-ui,sans-serif; }
+  .jp, .eki .kj, h1, h2, .cont b, .lineh b.n { font-family:"Noto Sans JP","Noto Sans KR",sans-serif; }
+  :focus-visible { outline-color:var(--ink); }
+
+  /* 장식 걷어내기 */
+  .stripe, .tenji, .board, .lineh .band, .lineh .no, .lineh .tenji { display:none !important; }
+  h2::before { display:none; }
+
+  /* 머리 */
+  header { background:var(--bg); }
+  h1 .lg { display:none; }
+  h1 { font-size:1.2rem; line-height:1.15; }
+  h1 small { display:block; font-family:var(--mono); font-weight:500; letter-spacing:.12em; font-size:.62rem; }
+  .sizer { border:1.5px solid var(--line); background:var(--card); }
+  .sizer button[aria-pressed="true"] { background:var(--text); color:var(--card); }
+  .langsw { border:1.5px solid var(--line); background:var(--card); font-family:var(--mono); font-weight:500; font-size:.85rem; }
+  .rate { font-size:.8rem; }
+
+  /* 승차권 종이: 양옆 구멍 + 점선 */
+  .tk { position:relative; background:var(--card); border-radius:10px; box-shadow:0 1px 0 var(--line); }
+  .tk::before, .tk::after { content:""; position:absolute; top:var(--hole,50%); width:16px; height:16px; border-radius:50%; background:var(--bg); transform:translateY(-50%); }
+  .tk::before { left:-8px; } .tk::after { right:-8px; }
+  .tk .row { display:flex; justify-content:space-between; gap:8px; font-family:var(--mono); font-size:.68rem; color:var(--muted); letter-spacing:.08em; }
+  .tk .cut { border-top:1.5px dashed var(--cut); margin:12px -16px; }
+
+  /* 탭 머리: 제목 한 줄 + 영문 작은 글씨 */
+  .lineh { background:none; box-shadow:none; margin-bottom:8px; }
+  .lineh .in { padding:2px 2px 6px; }
+  .lineh b.n { font-size:1.35rem; }
+  .lineh small { font-family:var(--mono); font-size:.7rem; letter-spacing:.06em; }
+
+  /* 홈: 이어서 하기 = 승차권 */
+  .cont { display:block; background:var(--card); color:var(--text); box-shadow:0 1px 0 var(--line); border-radius:10px; padding:14px 16px; --hole:62%; }
+  .cont::before { content:""; position:absolute; left:-8px; top:62%; bottom:auto; width:16px; height:16px; border-radius:50%; background:var(--bg); transform:translateY(-50%); }
+  .cont::after { content:""; position:absolute; right:-8px; top:62%; width:16px; height:16px; border-radius:50%; background:var(--bg); transform:translateY(-50%); }
+  .cont .play { display:none; }
+  .cont .nx, .cont .tkrow { display:flex; justify-content:space-between; font-family:var(--mono); font-size:.68rem; color:var(--muted); letter-spacing:.08em; font-weight:500; }
+  .cont .tkmain { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:8px 0 2px; }
+  .cont .tkmain b { font-size:1.5rem; font-weight:900; margin:0; }
+  .cont .tkmain i { font-style:normal; color:var(--ink); font-size:1.2rem; }
+  .cont .tkgo { display:flex; justify-content:space-between; align-items:center; border-top:1.5px dashed var(--cut); margin:12px -16px 0; padding:12px 16px 0; }
+  .cont .tkgo small { color:var(--text); font-size:.95rem; font-weight:700; }
+  .cont .tkgo em { font-style:normal; background:var(--ink); color:#fff; border-radius:6px; padding:6px 14px; font-weight:800; font-size:.9rem; }
+  .cont #contS { display:block; font-family:var(--mono); color:var(--muted); font-size:.7rem; letter-spacing:.04em; }
+
+  /* 홈: 메뉴 = 작은 승차권 4장 */
+  .tiles { display:grid !important; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
+  .tiles .t-list, .tiles .t-game, header .rate { display:none !important; }
+  .tile { display:flex; gap:10px; align-items:center; text-align:left; background:var(--card); border:0; border-radius:8px; padding:12px; color:var(--text); cursor:pointer; box-shadow:0 1px 0 var(--line); min-height:64px; }
+  .tile .i { font-size:1.3rem; }
+  .tile b { display:block; font-size:1rem; }
+  .tile small { display:block; font-family:var(--mono); font-size:.66rem; color:var(--muted); letter-spacing:.06em; }
+
+  /* 홈: 오늘의 단어 */
+  .eki.tk { padding:14px 16px 16px; overflow:visible; box-shadow:0 1px 0 var(--line); }
+  .eki .tw { display:flex; align-items:center; gap:12px; margin-top:8px; }
+  .eki .tw > div { flex:1; min-width:0; }
+  .eki .kj { font-size:2.4rem; font-weight:700; letter-spacing:.02em; line-height:1.15; }
+  .eki .kn { font-size:.9rem; color:var(--muted); font-weight:500; }
+  .eki .mean { font-weight:800; font-size:1.05rem; margin-top:4px; }
+  .eki .say { width:46px; height:46px; border-radius:50%; background:var(--bg); color:var(--ink); border:1.5px solid var(--line); font-size:1.1rem; }
+  .eki .stamp { position:absolute; right:70px; top:30px; width:54px; height:54px; border:2px solid var(--ink); border-radius:50%; color:var(--ink); display:grid; place-items:center; font-size:.66rem; font-weight:800; transform:rotate(-12deg); text-align:center; line-height:1.2; pointer-events:none; opacity:.85; }
+
+  /* 아래 메뉴: 5개, 종이 띠 */
+  nav { grid-template-columns:repeat(5,1fr); background:var(--card); box-shadow:0 -1px 0 var(--line); }
+  nav button { color:var(--muted); font-size:.72rem; min-height:54px; }
+  nav button .i { width:auto; height:28px; border:0; background:none; font-size:1.25rem; filter:grayscale(1); opacity:.7; }
+  nav button[aria-selected="true"], nav button.on { color:var(--ink); font-weight:800; }
+  nav button[aria-selected="true"] .i, nav button.on .i { background:none; filter:none; opacity:1; }
+  nav [data-tab=flash], nav [data-tab=talk], nav [data-tab=rec], nav [data-tab=bbs] { display:none !important; }
+  @media (min-width:700px) { nav { max-width:560px; } }
+  .more { position:fixed; inset:0; z-index:30; background:#0d132066; display:flex; align-items:flex-end; justify-content:center; }
+  .more .sheet { width:100%; max-width:560px; background:var(--bg); border-radius:16px 16px 0 0; padding:16px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px)); display:grid; gap:8px; }
+  .more .sheet .row { font-family:var(--mono); font-size:.7rem; color:var(--muted); letter-spacing:.1em; display:flex; justify-content:space-between; padding:0 4px 4px; }
+  .more .sheet button { display:flex; align-items:center; gap:12px; text-align:left; width:100%; border:0; border-radius:8px; background:var(--card); color:var(--text); padding:14px 16px; cursor:pointer; box-shadow:0 1px 0 var(--line); }
+  .more .sheet button .i { font-size:1.3rem; }
+  .more .sheet button b { display:block; font-size:1.05rem; }
+  .more .sheet button small { font-family:var(--mono); font-size:.66rem; color:var(--muted); letter-spacing:.06em; }
+
+  /* 버튼 공통: 종이 위 납작한 버튼 */
+  .controls button, .bar button, .seg button, .cal-head button, .rec-lang, .join button, .ostatus button, .emotes button, .vnav button, .choices button, .lis-opts select, .join input, .dpick-row button, .daytile {
+    border:1.5px solid var(--line); box-shadow:none; background:var(--card); color:var(--text); border-radius:8px; }
+  .controls button:active, .seg button:active, .choices button:active, .modes button:active { transform:translateY(1px); box-shadow:none; }
+  .seg button[aria-pressed="true"], .dpick-row button[aria-pressed="true"] { background:var(--text); color:var(--card); border-color:var(--text); }
+  .lis-big { background:var(--ink) !important; border-color:var(--ink) !important; color:#fff !important; }
+  .vnav button:last-child { background:var(--text); color:var(--card); border-color:var(--text); }
+
+  /* 단어장 Day = 표 한 장씩 */
+  .daytile { border-radius:8px; border-style:dashed; }
+  .daytile small { font-family:var(--mono); letter-spacing:.06em; }
+  .daytile.full { border-style:solid; border-color:var(--ink); }
+  .vpill { background:var(--card); border:1.5px solid var(--line); font-family:var(--mono); font-weight:500; }
+
+  /* 카드 = 승차권 */
+  .flash { background:var(--card); color:var(--text); box-shadow:0 1px 0 var(--line); border-radius:12px; padding:44px 20px 40px; }
+  .flash::before { content:"乗車券 · 승차권"; background:none; border:0; color:var(--muted); font-family:var(--mono); font-weight:500; font-size:.68rem; letter-spacing:.1em; padding:12px 16px; }
+  .flash::after { content:""; left:16px; right:16px; bottom:28px; padding:0; height:0; background:none; border-top:1.5px dashed var(--cut); }
+  .flash.q::before { content:"問題 · 문제"; }
+  .flash .jp { color:var(--text); }
+  .flash .ex, .flash .back .ex { color:var(--muted); }
+  .vcard .vmean { color:var(--ink); }
+
+  /* 회화·목록 */
+  .phrase { border-left:0; border-radius:8px; box-shadow:0 1px 0 var(--line); }
+  .lis-list .phrase.on { background:var(--card); box-shadow:inset 3px 0 0 var(--ink), 0 1px 0 var(--line); }
+
+  /* 듣기 지금 재생 = 승차권 */
+  .lis-now { background:var(--card); color:var(--text); box-shadow:0 1px 0 var(--line); border-radius:12px; }
+  .lis-now .jp { color:var(--text); font-family:"Noto Sans JP","Noto Sans KR",sans-serif; font-weight:700; }
+  .lis-now .ko { color:var(--ink); }
+  .lis-now .lis-step, .lis-now .pod-time { color:var(--muted); font-family:var(--mono); }
+
+  /* 기록: 정기권 */
+  .rec-hero { background:var(--card); color:var(--text); box-shadow:0 1px 0 var(--line); border-radius:12px; }
+  .rec-hero::before { display:none; }
+  .rec-hero::after { content:"定期券 · 정기권"; color:var(--muted); font-family:var(--mono); font-weight:500; top:14px; bottom:auto; left:auto; right:16px; opacity:1; }
+  .rec-hero .big { color:var(--ink); }
+  .rec-hero .sub { color:var(--muted); }
+  .rec-today { background:var(--done); color:var(--text); }
+  .rec-today.todo { border:1.5px dashed var(--ink); color:var(--text); }
+  .rec-stat { border-top:0; box-shadow:0 1px 0 var(--line); }
+
+  /* 게임 모드·월드 입구 */
+  .modes button { background:var(--card); background-image:none; color:var(--text); box-shadow:0 1px 0 var(--line); border-radius:8px; }
+  .modes button::before { border-left-color:var(--cut); }
+  .modes button span { color:var(--muted); }
+  .worldgo { background:var(--card); color:var(--text); box-shadow:0 1px 0 var(--line); }
+  .worldgo small { color:var(--muted); }
+  .worldgo em { background:var(--ink); color:#fff; }
+
+  /* 게시판: 칠판 → 종이 */
+  .chalk { background:var(--card); color:var(--text); border:0; box-shadow:0 1px 0 var(--line); }
+  .chalk .sub, .chalk .cnt { color:var(--muted); }
+  .chalk .cats label { border:1.5px dashed var(--cut); }
+  .chalk .cats label:has(input:checked) { background:var(--text); color:var(--card); border-color:var(--text); }
+  .chalk textarea, .chalk input[type=text] { background:var(--bg); color:var(--text); border:1.5px solid var(--line); }
+  .chalk textarea::placeholder, .chalk input::placeholder { color:var(--muted); }
+  .chalk button[type=submit] { background:var(--ink); color:#fff; }
+  .chalk .soon { background:var(--bg); }
+  .bp { border-left:0; }
+  .bp.staff { box-shadow:inset 3px 0 0 var(--text), 0 1px 0 var(--line); }
+  .bbs-filter button[aria-pressed=true], .bp .ba button.on, .bp .rf button { background:var(--text); border-color:var(--text); color:var(--card); }
+
+  /* 처음 고르기·알림 */
+  .welcome { background:#0d1320b3; }
+  .wbox { background:var(--bg); color:var(--text); box-shadow:none; }
+  .wbox h2 { color:var(--text); }
+  .wnx, .wnote { color:var(--muted); font-family:var(--mono); font-weight:500; }
+  .wpick { background:var(--card); color:var(--text); box-shadow:0 1px 0 var(--line); }
+  .wpick small { color:var(--muted); }
+  .wpick.rec { outline:2px solid var(--ink); }
+  #toast { background:var(--text); color:var(--card); border:0; }
+  body.playing .gexit { border:1.5px solid var(--line); }
+</style>
+<script>
+// ── 2안 「종이 승차권」: 메뉴 5개(더보기), 홈의 승차권·오늘의 단어 ──
+(() => {
+  document.querySelector("h1").innerHTML = `<span>${tr("한일전차", "日韓電車")}<small>HANIL LINE · ${tr("日韓電車", "한일전차")}</small></span>`;
+  const NAMES = { list:["T","단어장","単語帳","TANGO"], flash:["C","카드","カード","CARD"], talk:["K","상황 회화","会話","KAIWA"], listen:["L","듣기","リスニング","LISTEN"],
+    game:["G","한일역","日韓駅","STATION"], rec:["R","내 기록","記録","RECORD"], bbs:["B","게시판","掲示板","BOARD"] };
+  if (typeof LINES !== "undefined") for (const id in NAMES) { const [c, ko, ja, en] = NAMES[id]; LINES[id] = [c, "", tr(ko, ja), en]; }
+  document.querySelectorAll(".lineh").forEach(h => { const id = h.parentElement.id; if (!NAMES[id]) return; const [, ko, ja, en] = NAMES[id];
+    h.querySelector("b.n").textContent = tr(ko, ja); h.querySelector("small").textContent = en; });
+
+  // 아래 메뉴: 홈 · 단어 · 듣기 · 한일역 · 더보기
+  const nav = document.querySelector("nav"), gb = nav.querySelector('[data-tab="game"]');
+  gb.lastChild.nodeValue = tr("한일역", "日韓駅"); gb.querySelector(".i").textContent = "🚉";
+  nav.querySelector('[data-tab="list"]').lastChild.nodeValue = tr("단어", "単語");
+  nav.insertAdjacentHTML("beforeend", `<button type="button" id="moreBtn" aria-haspopup="dialog"><span class="i">☰</span>${tr("더보기", "もっと")}</button>`);
+  const HID = ["flash", "talk", "rec", "bbs"], ICO = { flash:"🃏", talk:"💬", rec:"🏆", bbs:"📝" };
+  const SUB = { flash:["뒤집어서 뜻 확인", "めくって意味を確認"], talk:["편의점·식당·역·면접", "コンビニ・食堂・駅・面接"], rec:["출석·배지", "出席・バッジ"], bbs:["의견·질문 남기기", "要望・質問を書く"] };
+  const moreOn = () => { const cur = nav.querySelector('[aria-selected="true"]')?.dataset.tab; $("moreBtn").classList.toggle("on", HID.includes(cur)); };
+  new MutationObserver(moreOn).observe(nav, { subtree:true, attributes:true, attributeFilter:["aria-selected"] }); moreOn();
+  const closeMore = () => { $("moreSheet")?.remove(); $("moreBtn").focus(); };
+  $("moreBtn").onclick = () => {
+    document.body.insertAdjacentHTML("beforeend", `<div class="more" id="moreSheet" role="dialog" aria-modal="true" aria-label="${tr("더보기", "もっと")}"><div class="sheet">
+      <div class="row"><span>${tr("더보기", "もっと")} · MORE</span><span>No. ${String(new Date().getDate()).padStart(2, "0")}</span></div>
+      ${HID.map(id => `<button data-m="${id}"><span class="i">${ICO[id]}</span><span><b>${tr(NAMES[id][1], NAMES[id][2])}</b><small>${tr(...SUB[id])}</small></span></button>`).join("")}
+    </div></div>`);
+    const s = $("moreSheet"); s.querySelector("button").focus();
+    s.onclick = e => { const b = e.target.closest("[data-m]"); if (b) { $("moreSheet").remove(); goTab(b.dataset.m); } else if (e.target === s) closeMore(); };
+    s.onkeydown = e => { if (e.key === "Escape") closeMore(); };
+  };
+
+  // 홈 메뉴 승차권 4장 (글자는 두 언어 모두 여기서 정함)
+  const tile = (id, ko, ja, en) => { const t = document.querySelector(`.tile[data-go="${id}"]`); if (t) t.querySelector("span:last-child").innerHTML = `<b>${tr(ko, ja)}</b><small>${en}</small>`; };
+  tile("flash", "카드", "カード", "CARD"); tile("talk", "상황 회화", "会話", "KAIWA"); tile("listen", "듣기", "リスニング", "LISTEN"); tile("rec", "내 기록", "記録", "RECORD");
+
+  // 이어서 하기 = 승차권 한 장
+  const c = $("cont"); c.classList.add("tk");
+  const base = renderHome;
+  renderHome = function () {
+    base();
+    let last; try { last = localStorage.getItem("jp-last"); } catch {}
+    const deck = typeof deckName === "function" ? deckName() : "N5";
+    const where = last && NAMES[last] ? tr(NAMES[last][1], NAMES[last][2]) : tr("단어장", "単語帳");
+    const sub = $("contS").textContent;
+    c.innerHTML = `<span class="tkrow"><span>乗車券 · ${tr("승차권", "じょうしゃけん")}</span><span>No. ${String(typeof i === "number" ? i + 1 : 1).padStart(4, "0")}</span></span>
+      <span class="tkmain"><b>${deck}</b><i>→</i><b>${where}</b></span>
+      <span id="contS">${sub}</span><b id="contT" hidden>${$("contT")?.textContent || ""}</b>
+      <span class="tkgo"><small>${last ? tr("이어서 하기", "つづきから") : tr("시작하기", "はじめる")}</small><em>${tr("승차", "乗車")} ▶</em></span>`;
+    // 오늘의 단어
+    const d = new Date(), n = (d.getFullYear() * 372 + d.getMonth() * 31 + d.getDate()) % W.length, w = W[n];
+    const t = $("today"); t.className = "eki tk";
+    const no = String(n + 1).padStart(4, "0"), known = typeof done !== "undefined" && done.has && done.has(w[0]);
+    if (JA) { const [k, kt] = krOf(w);
+      t.innerHTML = `<div class="row"><span>今日の単語 · 오늘의 단어</span><span>No. ${no}</span></div>
+        <div class="tw"><div><div class="kj kr" lang="ko">${k}</div><div class="kn">${kt}</div><div class="mean">${w[0]}（${w[1]}）</div></div>
+        <button class="say" data-say="${k}" data-lang="ko" aria-label="${k} を聞く">🔊</button></div>${known ? '<span class="stamp">済<br>覚えた</span>' : ""}`;
+    } else t.innerHTML = `<div class="row"><span>오늘의 단어 · 今日の単語</span><span>No. ${no}</span></div>
+        <div class="tw"><div><div class="kj" lang="ja">${w[0]}</div><div class="kn"><span lang="ja">${w[1]}</span> · ${typeof romaji === "function" ? romaji(w[1]) : ""}</div><div class="mean">${w[2]}</div></div>
+        <button class="say" data-say="${w[1]}" aria-label="읽기: ${w[1]}">🔊</button></div>${known ? '<span class="stamp">외움<br>済</span>' : ""}`;
+  };
+  renderHome();
+  const h2 = document.querySelector("#home h2"); if (h2) h2.hidden = true;
 })();
 </script>
 </body>
