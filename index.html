@@ -3,7 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>일본어 학습</title>
+<title>한일냠냠 · 日韓もぐもぐ</title>
+<meta name="theme-color" content="#ffd23f">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;800;900&family=Noto+Sans+JP:wght@400;700;900&display=swap">
 <style>
   :root { --bg:#f6f5f1; --card:#fff; --text:#222; --muted:#777; --accent:#c8374a; --line:#e3e0d8; --done:#e8f3ea; }
   @media (prefers-color-scheme: dark) { :root { --bg:#1b1b1d; --card:#26262a; --text:#eee; --muted:#999; --accent:#ff6b7f; --line:#3a3a3f; --done:#22352a; } }
@@ -33,6 +36,32 @@
   .phrase { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:6px; }
   .phrase .ko { color:var(--muted); font-size:.95rem; }
   .say { border:0; background:none; cursor:pointer; font-size:1rem; padding:2px 4px; vertical-align:middle; }
+  .modes { display:grid; gap:8px; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); }
+  .modes button, .choices button { text-align:left; padding:14px; border:1px solid var(--line); background:var(--card); color:var(--text); border-radius:10px; cursor:pointer; font:inherit; }
+  .modes button span { display:block; color:var(--muted); font-size:.9rem; margin-top:4px; }
+  .flash.q { min-height:180px; cursor:default; }
+  .choices { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
+  .choices button { text-align:center; font-size:1.1rem; min-height:64px; }
+  .choices button.ok { background:var(--done); border-color:#3a9a55; }
+  .choices button.ng { border-color:var(--accent); color:var(--accent); }
+  .choices button:disabled { cursor:default; }
+  .timer { height:6px; background:var(--line); border-radius:3px; overflow:hidden; margin-bottom:10px; }
+  .timer div { height:100%; background:var(--accent); width:100%; }
+  nav { overflow-x:auto; }
+  #rCv { display:block; width:100%; height:min(68vh,560px); border-radius:14px; background:var(--card); border:1px solid var(--line); touch-action:none; }
+  .choices.emoji button { font-size:2.6rem; min-height:90px; }
+  .big { font-size:2.6rem; font-weight:700; }
+  .hint { margin-top:14px; font-size:1.3rem; color:var(--accent); min-height:1.6em; }
+  .join { display:flex; gap:8px; margin-top:8px; }
+  .join input { flex:1; min-width:0; padding:10px; font-size:1.1rem; border:1px solid var(--line); border-radius:8px; background:var(--card); color:var(--text); }
+  .join button, .emotes button { padding:10px 14px; border:1px solid var(--line); background:var(--card); color:var(--text); border-radius:8px; cursor:pointer; font:inherit; }
+  .ostatus { color:var(--accent); font-weight:600; text-align:center; min-height:1.2em; }
+  .ostatus button { margin:6px 0; padding:8px 12px; border:1px solid var(--line); background:var(--card); color:var(--text); border-radius:8px; font:inherit; cursor:pointer; }
+  .ostatus .code { font-size:2rem; letter-spacing:.2em; display:block; }
+  .emotes { display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-top:10px; }
+  .emotes button { font-size:.9rem; padding:6px 10px; }
+  .bubble { position:fixed; left:50%; top:16px; transform:translateX(-50%); background:var(--card); border:2px solid var(--accent); border-radius:16px; padding:12px 18px; font-size:1.2rem; text-align:center; box-shadow:0 6px 20px #0003; z-index:9; pointer-events:none; }
+  nav button { white-space:nowrap; }
   .rate { display:flex; align-items:center; gap:8px; margin:0 0 10px; color:var(--muted); }
   .lis-now { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:24px 16px; text-align:center; min-height:190px; display:flex; flex-direction:column; justify-content:center; gap:10px; }
   .lis-now .jp { font-size:2rem; }
@@ -84,22 +113,129 @@
   .games-rec .phrase { display:flex; justify-content:space-between; }
   #toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(160px); background:var(--text); color:var(--bg); padding:12px 18px; border-radius:12px; font-weight:600; transition:transform .3s; z-index:9; max-width:90vw; text-align:center; }
   #toast.show { transform:translateX(-50%) translateY(0); }
+
+  /* ── 도시락 디자인: 밝은 바탕, 굵은 테두리, 살짝 밀린 그림자, 메뉴마다 다른 색 ── */
+  :root { --bg:#fff7dc; --card:#ffffff; --text:#2a2116; --muted:#6b5d49; --accent:#ff6b4a; --line:#2a2116; --done:#d4f3e5;
+    --yolk:#ffd23f; --mint:#a8e6cf; --peach:#ffb3a7; --sky:#bcd7ff; --lilac:#d9c2ff; --butter:#ffe08a; --onyolk:#2a2116;
+    --bd:2.5px; --sh:3px 3px 0 var(--line); --fs:1.0625rem; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#1d1a14; --card:#2a261e; --text:#f6efe2; --muted:#c3b8a4; --accent:#ff8a6e; --line:#f6efe2; --done:#24443a;
+    --yolk:#e3b62a; --mint:#2f6b55; --peach:#7a4038; --sky:#2f4a75; --lilac:#4f3b78; --butter:#6e5a1f; --onyolk:#1d1a14; } }
+  html { font-size:var(--fs); }
+  body { font-family:"Noto Sans KR","Noto Sans JP",system-ui,sans-serif; line-height:1.55; padding-bottom:calc(84px + env(safe-area-inset-bottom,0px)); }
+  h1, h2, .jua { font-family:"Jua","Noto Sans KR",sans-serif; font-weight:400; }
+  button, select, input { font:inherit; color:inherit; }
+  :focus-visible { outline:3px solid var(--accent); outline-offset:2px; }
+  header { padding:14px max(16px,env(safe-area-inset-left,0px)) 0; }
+  .top { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
+  h1 { font-size:1.7rem; margin:0; letter-spacing:-.01em; }
+  h1 em { font-style:normal; color:var(--accent); }
+  .tools { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .sizer { display:flex; border:var(--bd) solid var(--line); border-radius:999px; background:var(--card); padding:2px; }
+  .sizer button { border:0; background:none; min-width:40px; min-height:38px; border-radius:999px; cursor:pointer; font-weight:800; }
+  .sizer button[aria-pressed="true"] { background:var(--yolk); color:var(--onyolk); }
+  .rate { margin:10px 0 0; font-size:.9rem; }
+  .rate input { accent-color:var(--accent); }
+  main { padding:16px max(16px,env(safe-area-inset-left,0px)) 24px; }
+  h2 { font-size:1.3rem; margin:22px 0 10px; }
+
+  /* 아래 고정 메뉴 */
+  nav { position:fixed; left:0; right:0; bottom:0; z-index:20; background:var(--card); border-top:var(--bd) solid var(--line); border-bottom:0;
+    display:grid; grid-template-columns:repeat(7,1fr); gap:2px; overflow:visible;
+    padding:6px max(6px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(6px,env(safe-area-inset-left,0px)); }
+  nav button { display:flex; flex-direction:column; align-items:center; gap:1px; padding:6px 0; min-height:58px; font-size:.72rem; border:0; border-radius:14px; color:var(--text); white-space:nowrap; }
+  nav button .i { font-size:1.35rem; line-height:1.1; }
+  nav button[aria-selected="true"] { background:var(--yolk); color:var(--onyolk); font-weight:700; border:0; }
+  @media (min-width:700px) { nav { max-width:720px; margin:auto; bottom:12px; border:var(--bd) solid var(--line); border-radius:22px; box-shadow:var(--sh); } }
+
+  /* 홈 */
+  .cont { display:flex; gap:14px; align-items:center; width:100%; text-align:left; background:var(--yolk); color:var(--onyolk); border:var(--bd) solid var(--line); border-radius:22px; padding:16px; box-shadow:4px 4px 0 var(--line); cursor:pointer; }
+  .cont .play { width:54px; height:54px; border-radius:50%; background:var(--onyolk); color:var(--yolk); display:grid; place-items:center; font-size:1.3rem; flex:none; }
+  .cont b { font-family:"Jua",sans-serif; font-weight:400; font-size:1.4rem; display:block; }
+  .cont small { font-size:.88rem; }
+  .tiles { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px; }
+  @media (min-width:640px) { .tiles { grid-template-columns:repeat(3,1fr); } }
+  .tile { min-height:112px; display:flex; flex-direction:column; justify-content:space-between; align-items:flex-start; text-align:left; border:var(--bd) solid var(--line); border-radius:20px; padding:14px; box-shadow:var(--sh); cursor:pointer; color:var(--text); }
+  .tile:active, .cont:active { transform:translate(2px,2px); box-shadow:1px 1px 0 var(--line); }
+  .tile .i { font-size:2rem; line-height:1; }
+  .tile b { font-family:"Jua",sans-serif; font-weight:400; font-size:1.25rem; display:block; }
+  .tile small { font-size:.8rem; color:var(--muted); }
+  .t-list { background:var(--mint); } .t-flash { background:var(--peach); } .t-talk { background:var(--sky); }
+  .t-listen { background:var(--butter); } .t-game { background:var(--lilac); } .t-rec { background:var(--card); }
+  .today { display:flex; gap:12px; align-items:center; background:var(--card); border:var(--bd) solid var(--line); border-radius:20px; padding:16px; }
+  .today .jp { font-size:2.2rem; font-weight:900; line-height:1.1; }
+  .today .rd { display:inline-block; background:var(--mint); border-radius:8px; padding:0 8px; font-weight:700; font-size:.88rem; margin-top:6px; }
+  .today .say { margin-left:auto; flex:none; width:56px; height:56px; border-radius:50%; border:var(--bd) solid var(--line); background:var(--yolk); color:var(--onyolk); font-size:1.4rem; }
+
+  /* 기존 탭 부품을 도시락 모양으로 */
+  .bar { color:var(--muted); }
+  .bar label, .lis-opts label { cursor:pointer; }
+  .word, .phrase, .flash, .lis-now, .rec-hero, .rec-stat, .badge, .cal .d { border:var(--bd) solid var(--line); }
+  .word { border-radius:18px; padding:14px; margin-bottom:10px; }
+  .word.done { background:var(--done); }
+  .word input, .bar input[type=checkbox], .lis-opts input[type=checkbox] { width:22px; height:22px; accent-color:var(--accent); }
+  .jp { font-size:1.45rem; font-weight:800; }
+  .flash { border-radius:24px; box-shadow:4px 4px 0 var(--line); min-height:300px; }
+  .flash .jp { font-size:3rem; }
+  .controls button, .bar button, .seg button, .cal-head button, .rec-lang { min-height:48px; padding:8px 18px; border:var(--bd) solid var(--line); background:var(--card); color:var(--text); border-radius:999px; font-weight:700; box-shadow:2px 2px 0 var(--line); }
+  .controls button:active, .seg button:active { transform:translate(2px,2px); box-shadow:none; }
+  .lis-big { background:var(--yolk) !important; color:var(--onyolk) !important; border-color:var(--line) !important; font-size:1.2rem; }
+  .seg button { border-radius:16px; }
+  .seg button[aria-pressed="true"] { background:var(--yolk); color:var(--onyolk); border-color:var(--line); }
+  .phrase { border-radius:16px; padding:12px 14px; margin-bottom:8px; }
+  .lis-list .phrase.on { background:var(--butter); border-color:var(--line); }
+  .say { font-size:1.15rem; min-width:40px; min-height:40px; }
+  .lis-now, .rec-hero { border-radius:22px; box-shadow:var(--sh); }
+  .lis-opts select { border:var(--bd) solid var(--line); border-radius:10px; min-height:40px; }
+  .rec-hero .big { color:var(--accent); font-family:"Jua",sans-serif; font-weight:400; }
+  .rec-today { border-radius:14px; }
+  .rec-today.todo { border:var(--bd) dashed var(--accent); }
+  .rec-stat { border-radius:16px; }
+  .cal { grid-template-columns:repeat(7,minmax(0,1fr)); }
+  .cal .d { border-width:1.5px; border-radius:10px; }
+  .cal .d.today { border-color:var(--accent); border-width:3px; }
+  .badge { border-radius:16px; }
+  #toast { bottom:calc(96px + env(safe-area-inset-bottom,0px)); border:var(--bd) solid var(--line); background:var(--yolk); color:var(--onyolk); }
+  @media (prefers-reduced-motion:reduce) { * { transition:none !important; } }
 </style>
 </head>
 <body>
 <header>
-  <h1>🇯🇵 일본어 학습 (JLPT N3~N2)</h1>
+  <div class="top">
+    <h1>한일<em>냠냠</em></h1>
+    <div class="tools">
+      <div class="sizer" role="group" aria-label="글자 크기 · 文字サイズ">
+        <button data-fs="1" aria-pressed="false" aria-label="보통 글자">가</button>
+        <button data-fs="1.0625" aria-pressed="true" aria-label="큰 글자" style="font-size:1.12em">가</button>
+        <button data-fs="1.25" aria-pressed="false" aria-label="아주 큰 글자" style="font-size:1.3em">가</button>
+      </div>
+    </div>
+  </div>
   <label class="rate">🔊 읽기 속도 <input type="range" id="rate" min="0.5" max="1.5" step="0.1" value="1"> <span id="rateVal">1.0x</span></label>
-  <nav role="tablist">
-    <button role="tab" aria-selected="true" data-tab="list">단어장</button>
-    <button role="tab" aria-selected="false" data-tab="flash">플래시카드</button>
-    <button role="tab" aria-selected="false" data-tab="talk">실생활 회화</button>
-    <button role="tab" aria-selected="false" data-tab="listen">🎧 듣기 모드</button>
-    <button role="tab" aria-selected="false" data-tab="rec">🏆 기록 · 記録</button>
+  <nav role="tablist" aria-label="메뉴">
+    <button role="tab" aria-selected="true" data-tab="home"><span class="i">🏠</span>홈</button>
+    <button role="tab" aria-selected="false" data-tab="list"><span class="i">📖</span>단어장</button>
+    <button role="tab" aria-selected="false" data-tab="flash"><span class="i">🃏</span>카드</button>
+    <button role="tab" aria-selected="false" data-tab="talk"><span class="i">💬</span>회화</button>
+    <button role="tab" aria-selected="false" data-tab="listen"><span class="i">🎧</span>듣기</button>
+    <button role="tab" aria-selected="false" data-tab="rec"><span class="i">🏆</span>기록</button>
+    <button role="tab" aria-selected="false" data-tab="game"><span class="i">🎮</span>게임</button>
   </nav>
 </header>
 <main>
-  <section id="list">
+  <section id="home">
+    <button class="cont" id="cont"><span class="play" aria-hidden="true">▶</span><span><b id="contT">시작하기</b><small id="contS">단어장부터 차근차근 시작해요</small></span></button>
+    <div class="tiles">
+      <button class="tile t-list" data-go="list"><span class="i">📖</span><span><b>단어장</b><small id="tileList">50개 단어</small></span></button>
+      <button class="tile t-flash" data-go="flash"><span class="i">🃏</span><span><b>카드</b><small>뒤집어서 뜻 확인</small></span></button>
+      <button class="tile t-talk" data-go="talk"><span class="i">💬</span><span><b>회화</b><small>편의점·식당·역·면접</small></span></button>
+      <button class="tile t-listen" data-go="listen"><span class="i">🎧</span><span><b>듣기</b><small>화면 꺼도 들려요</small></span></button>
+      <button class="tile t-game" data-go="game" id="tileGame" hidden><span class="i">🎮</span><span><b>게임</b><small>몰라도 OK, 친구랑 대결</small></span></button>
+      <button class="tile t-rec" data-go="rec"><span class="i">🏆</span><span><b>기록</b><small id="tileRec">출석·배지</small></span></button>
+    </div>
+    <h2>오늘의 단어</h2>
+    <div class="today" id="today"></div>
+  </section>
+  <section id="list" hidden>
     <div class="bar"><span id="count"></span><label><input type="checkbox" id="hideDone"> 외운 단어 숨기기</label></div>
     <div id="words"></div>
   </section>
@@ -168,6 +304,76 @@
   </section>
 
   <section id="rec" hidden></section>
+  <section id="game" hidden>
+    <div id="gSetup">
+      <h2>🏃 갈림길 러너 · 分かれ道ランナー</h2>
+      <p class="ex">맞는 뜻의 문으로 달려가면 친구들이 늘어나요! 틀리면 줄어들어요. 좌우로 밀거나 ←→ 키.<br>正しい意味のゲートを通ると仲間が増える！間違えると減るよ。左右にスワイプか←→キー。</p>
+      <div class="modes">
+        <button data-run="ko.easy"><b>🇰🇷 쉬움 · 그림</b><span>일본어 몰라도 OK</span></button>
+        <button data-run="ko.normal"><b>🇰🇷 보통 · 단어</b><span>JLPT 단어 뜻 고르기</span></button>
+        <button data-run="ja.easy"><b>🇯🇵 かんたん・絵</b><span>韓国語を知らなくてもOK</span></button>
+        <button data-run="ja.normal"><b>🇯🇵 ふつう・単語</b><span>韓国語の意味を選ぶ</span></button>
+      </div>
+      <p class="ex" id="rBest"></p>
+      <h2>🎯 친구랑 내기 · 友達と勝負</h2>
+      <p class="ex">일본어를 하나도 몰라도 OK! 소리를 듣고 그림을 골라요. 기록을 친구에게 보내 내기해 보세요.<br>韓国語をまったく知らなくてもOK！音を聞いて絵を選ぼう。記録を友達に送って勝負！</p>
+      <div id="cInvite" class="ostatus" hidden></div>
+      <div class="modes">
+        <button data-ch="ko"><b>🇰🇷 일본어 소리 맞히기</b><span>몰라도 맞히는 일본어 10문제</span></button>
+        <button data-ch="ja"><b>🇯🇵 韓国語の音あてクイズ</b><span>知らなくても分かる韓国語10問</span></button>
+      </div>
+      <h2>🇰🇷 한·일 단어 대결 🇯🇵 日韓単語バトル</h2>
+      <p class="ex">10초 안에 뜻을 골라요. 빨리 맞힐수록 점수가 높아요.<br>10秒以内に意味を選んでください。早く当てるほど高得点！</p>
+      <div class="modes">
+        <button data-mode="ko"><b>🇰🇷 혼자 하기</b><span>일본어 단어 → 한국어 뜻</span></button>
+        <button data-mode="ja"><b>🇯🇵 ひとりで</b><span>韓国語の単語 → 日本語の意味</span></button>
+        <button data-mode="duel"><b>👥 둘이서 · ふたりで</b><span>한국인 vs 일본인, 번갈아 5문제씩<br>韓国人 vs 日本人、交代で5問ずつ</span></button>
+      </div>
+      <h2>🌏 온라인 대결 · オンライン対戦</h2>
+      <p class="ex">한국인과 일본인이 각자 폰으로 같은 단어를 동시에 풀어요. 방을 만들고 코드를 친구에게 보내 주세요.<br>韓国人と日本人がそれぞれのスマホで同じ単語を同時に解きます。部屋を作ってコードを友達に送ってください。</p>
+      <div class="modes">
+        <button data-host="ko"><b>🇰🇷 방 만들기</b><span>나는 한국어 사용자</span></button>
+        <button data-host="ja"><b>🇯🇵 部屋を作る</b><span>私は日本語ユーザー</span></button>
+      </div>
+      <div class="join"><input id="oCode" inputmode="numeric" maxlength="4" placeholder="코드 · コード (4자리)"><button id="oJoin">참가 · 参加</button></div>
+      <p id="oStatus" class="ostatus" aria-live="polite"></p>
+      <p class="ex" id="gBest"></p>
+    </div>
+    <div id="gPlay" hidden>
+      <div class="bar"><span id="gTurn"></span><span id="gScore"></span></div>
+      <div class="timer"><div id="gTime"></div></div>
+      <div class="flash q" id="gQ"></div>
+      <div class="choices" id="gChoices"></div>
+      <p id="oOpp" class="ostatus" hidden></p>
+      <div class="emotes" id="oEmotes" hidden></div>
+      <div class="controls"><button id="gNext" hidden>다음 ▶ 次へ</button><button id="gQuit">그만하기 · やめる</button></div>
+    </div>
+    <div id="rPlay" hidden>
+      <canvas id="rCv" aria-label="러너 게임 · ランナーゲーム"></canvas>
+      <div class="controls"><button id="rQuit">그만하기 · やめる</button></div>
+    </div>
+    <div id="rEnd" hidden>
+      <div class="flash" id="rResult"></div>
+      <div class="controls"><button id="rAgain">🔁 다시 · もう一度</button><button id="rMenu">메뉴 · メニュー</button></div>
+      <h2 id="rLearnedT"></h2>
+      <div id="rLearned"></div>
+    </div>
+    <div id="cPlay" hidden>
+      <div class="bar"><span id="cPos"></span><span id="cClock">0.0초</span></div>
+      <div class="flash q" id="cQ"></div>
+      <div class="choices emoji" id="cChoices"></div>
+    </div>
+    <div id="cEnd" hidden>
+      <div class="flash" id="cResult"></div>
+      <div class="controls"><button id="cShare">📨 친구에게 도전장 · 友達に挑戦状</button><button id="cAgain">🔁 다시 · もう一度</button><button id="cMenu">메뉴 · メニュー</button></div>
+      <h2 id="cLearnedT"></h2>
+      <div id="cLearned"></div>
+    </div>
+    <div id="gEnd" hidden>
+      <div class="flash" id="gResult"></div>
+      <div class="controls"><button id="gAgain">🔁 다시 · もう一度</button><button id="gMenu">메뉴 · メニュー</button></div>
+    </div>
+  </section>
 </main>
 <div id="toast" role="status" aria-live="polite"></div>
 
@@ -369,21 +575,21 @@ const toggle = w => { const add = !done.has(w); add ? done.add(w) : done.delete(
 const $ = id => document.getElementById(id);
 
 // 음성 읽기 (Web Speech API)
-const say = t => `<button class="say" data-say="${t}" aria-label="읽기: ${t}">🔊</button>`;
+const say = (t, lang = "ja") => `<button class="say" data-say="${t}" data-lang="${lang}" aria-label="읽기: ${t}">🔊</button>`;
 $("rate").oninput = () => $("rateVal").textContent = (+$("rate").value).toFixed(1) + "x";
-function speak(text) {
+function speak(text, lang = "ja") {
   if (!("speechSynthesis" in window)) return alert("이 브라우저는 음성 읽기를 지원하지 않아요.");
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = "ja-JP";
-  u.voice = speechSynthesis.getVoices().find(v => v.lang.replace("_", "-") === "ja-JP") || null;
+  u.lang = lang === "ko" ? "ko-KR" : "ja-JP";
+  u.voice = speechSynthesis.getVoices().find(v => v.lang.replace("_", "-") === u.lang) || null;
   u.rate = +$("rate").value;
   speechSynthesis.speak(u);
 }
 // 캡처 단계에서 처리해 카드 뒤집기/체크박스 토글이 같이 일어나지 않게 함
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-say]");
-  if (b) { e.preventDefault(); e.stopPropagation(); speak(b.dataset.say); }
+  if (b) { e.preventDefault(); e.stopPropagation(); speak(b.dataset.say, b.dataset.lang); }
 }, true);
 
 // 탭
@@ -759,9 +965,459 @@ window.Rec = Rec;
 Rec.tracker(lis.el);
 Rec.tracker(pod.el);
 document.querySelector('nav [data-tab="rec"]').addEventListener("click", () => Rec.render());
+// 같은 한자어라 한국어 소리가 닮은 단어 (한자 → 한국 한자음)
+const HANJA = { 経験:"경험", 準備:"준비", 説明:"설명", 必要:"필요", 約束:"약속", 予定:"예정", 機会:"기회", 状況:"상황", 影響:"영향", 解決:"해결",
+  努力:"노력", 期待:"기대", 関係:"관계", 環境:"환경", 将来:"장래", 目的:"목적", 結果:"결과", 原因:"원인", 意見:"의견", 確認する:"확인", 正直:"정직", 突然:"돌연" };
+
+// 일본어 사용자용: 각 단어의 대표 한국어 한 단어 + 가타카나 발음
+const KR = {
+  経験:["경험","キョンホム"], 準備:["준비","チュンビ"], 説明:["설명","ソルミョン"], 必要:["필요","ピリョ"], 約束:["약속","ヤクソク"],
+  予定:["예정","イェジョン"], 機会:["기회","キフェ"], 状況:["상황","サンファン"], 影響:["영향","ヨンヒャン"], 解決:["해결","ヘギョル"],
+  努力:["노력","ノリョク"], 期待:["기대","キデ"], 関係:["관계","クァンゲ"], 環境:["환경","ファンギョン"], 将来:["장래","チャンネ"],
+  目的:["목적","モクチョク"], 結果:["결과","キョルグァ"], 原因:["원인","ウォニン"], 意見:["의견","ウィギョン"], 手続き:["절차","チョルチャ"],
+  申し込む:["신청하다","シンチョンハダ"], 断る:["거절하다","コジョラダ"], 届ける:["가져다주다","カジョダジュダ"], 比べる:["비교하다","ピギョハダ"], 続ける:["계속하다","ケソカダ"],
+  増える:["늘다","ヌルダ"], 減る:["줄다","チュルダ"], 迷う:["헤매다","ヘメダ"], 慣れる:["익숙해지다","イクスケジダ"], 預ける:["맡기다","マッキダ"],
+  間に合う:["시간에 맞추다","シガネ マッチュダ"], 片付ける:["정리하다","チョンニハダ"], 支払う:["지불하다","チブラダ"], 確認する:["확인하다","ファギナダ"], 我慢する:["참다","チャムタ"],
+  遠慮する:["사양하다","サヤンハダ"], 譲る:["양보하다","ヤンボハダ"], 戻る:["돌아오다","トラオダ"], 伝える:["전하다","チョナダ"], 集める:["모으다","モウダ"],
+  詳しい:["자세하다","チャセハダ"], 珍しい:["드물다","トゥムルダ"], 厳しい:["엄하다","オマダ"], 懐かしい:["그립다","クリプタ"], 恥ずかしい:["부끄럽다","プックロプタ"],
+  素直:["솔직함","ソルチカム"], 正直:["정직","チョンジク"], 大切:["소중함","ソジュンハム"], 突然:["갑자기","カプチャギ"], 相変わらず:["여전히","ヨジョニ"],
+};
+console.assert(W.every(w => KR[w[0]]), "KR 누락");
+
+// 게임: 한·일 단어 대결
+// side "ko" = 한국어 사용자(일본어 단어를 보고 한국어 뜻 고르기), "ja" = 日本語ユーザー(韓国語を見て日本語を選ぶ)
+const G = { mode: null, qs: [], n: 0, score: { ko: 0, ja: 0 }, timer: null, left: 0 };
+const LIMIT = 10, PER = 10;
+const BEST = "jp-game-best";
+const getBest = () => { try { return JSON.parse(localStorage.getItem(BEST)) || {}; } catch { return {}; } };
+const showBest = () => { const b = getBest(); $("gBest").textContent = `최고 점수 · ベスト: 🇰🇷 ${b.ko || 0} / 🇯🇵 ${b.ja || 0}`; };
+const pick = (arr, k) => [...arr].sort(() => Math.random() - 0.5).slice(0, k);
+const view = v => ["gSetup", "gPlay", "gEnd", "cPlay", "cEnd", "rPlay", "rEnd"].forEach(id => $(id).hidden = id !== v);
+
+const makeQs = () => pick(W.map((_, i) => i), PER).map(w => ({ w, opts: pick([w, ...pick(W.map((_, i) => i).filter(i => i !== w), 3)], 4) }));
+function startGame(mode, qs = makeQs()) {
+  G.mode = mode; G.n = 0; G.score = { ko: 0, ja: 0 };
+  // 둘이서: 번갈아 출제 (ko, ja, ko, ja ...) / 온라인: 내 언어 쪽 문제만
+  G.qs = qs.map((q, k) => ({ ...q, side: mode === "duel" ? (k % 2 ? "ja" : "ko") : mode === "online" ? ON.side : mode }));
+  $("oOpp").hidden = $("oEmotes").hidden = mode !== "online";
+  view("gPlay"); ask();
+}
+function showScore(side) {
+  $("gScore").textContent = G.mode === "duel" || G.mode === "online" ? `🇰🇷 ${G.score.ko} : ${G.score.ja} 🇯🇵` : `점수 · 得点 ${G.score[side]}`;
+}
+function ask() {
+  clearInterval(G.timer); clearTimeout(G.hint);
+  const { w, side } = G.qs[G.n];
+  const [jp, yomi, ko] = W[w];
+  const opts = G.qs[G.n].opts;
+  if (G.mode === "online") onlineStatus();
+  $("gTurn").textContent = (G.mode === "duel" ? (side === "ko" ? "🇰🇷 한국인 차례" : "🇯🇵 日本人の番") : "") + ` ${G.n + 1} / ${G.qs.length}`;
+  showScore(side);
+  $("gQ").innerHTML = side === "ko"
+    ? `<div class="jp">${jp}${say(jp)}</div><div class="ex" style="margin-top:12px">이 단어의 뜻은?</div>`
+    : `<div class="jp">${KR[jp][0]}${say(KR[jp][0], "ko")}</div><div class="ex" style="margin-top:12px">この韓国語の意味は？</div><div class="hint" id="gHint"></div>`;
+  // 일본어 사용자: 3초 뒤 가타카나 발음 힌트
+  if (side === "ja") G.hint = setTimeout(() => $("gHint") && ($("gHint").textContent = "💡 " + KR[jp][1]), 3000);
+  $("gChoices").innerHTML = "";
+  opts.forEach(o => {
+    const b = document.createElement("button");
+    b.innerHTML = side === "ko" ? W[o][2] : `${W[o][0]}<div class="ex" style="margin:0;font-size:.85rem">${W[o][1]}</div>`;
+    b.onclick = () => answer(o, b);
+    b.dataset.w = o;
+    $("gChoices").append(b);
+  });
+  $("gNext").hidden = true;
+  G.left = LIMIT * 10;
+  $("gTime").style.width = "100%";
+  G.timer = setInterval(() => {
+    G.left--; $("gTime").style.width = G.left / (LIMIT / 10) + "%";
+    if (G.left <= 0) answer(null, null);
+  }, 100);
+}
+function answer(o, btn) {
+  clearInterval(G.timer);
+  const { w, side } = G.qs[G.n];
+  const [jp, yomi, ko, ex] = W[w];
+  const right = o === w;
+  clearTimeout(G.hint);
+  if (right) G.score[side] += 100 + Math.round(G.left);  // 기본 100점 + 남은 시간 보너스(최대 100)
+  $("gChoices").querySelectorAll("button").forEach(b => {
+    b.disabled = true;
+    if (+b.dataset.w === w) b.classList.add("ok");
+  });
+  if (btn && !right) btn.classList.add("ng");
+  // 정답 공개: 양쪽 언어를 모두 보여 줘서 서로의 언어를 접하게 함
+  $("gQ").innerHTML = `<div style="font-size:1.6rem">${right ? "⭕ 정답! 正解！" : o === null ? "⏰ 시간 초과 · 時間切れ" : "❌ 아쉬워요 · 残念"}</div>
+    <div class="back"><span class="jp">${jp}</span>${say(jp)} <span class="yomi">${yomi}</span><br>
+    🇰🇷 ${side === "ja" ? `${KR[jp][0]} <span class="yomi">${KR[jp][1]}</span>` : ko}${say(KR[jp][0], "ko")}<br><span class="ex">${ex}</span>${say(ex)}</div>` +
+    (HANJA[jp] ? `<div class="ex" style="margin-top:10px">💡 같은 한자어라 소리가 닮았어요 · 同じ漢字語で音が似ています<br><b>${jp.replace("する","")}</b> = ${HANJA[jp]} (${jp === "確認する" ? "ファギン" : KR[jp][1]}) ≈ ${yomi.replace("する","")}${say(HANJA[jp], "ko")}</div>` : "");
+  showScore(side);
+  if (G.mode === "online") { ON.mine.add(G.n); send({ t: "a", n: G.n, score: G.score[side] }); onlineStatus(); return; }
+  $("gNext").hidden = false;
+  $("gNext").focus();
+}
+function endGame() {
+  clearInterval(G.timer);
+  if (G.mode === "online") {
+    const me = ON.side, op = me === "ko" ? "ja" : "ko", s = G.score;
+    $("gResult").innerHTML = `<div style="font-size:2rem">${s[me] === s[op] ? "🤝 무승부 · 引き分け" : (s[me] > s[op]) === (me === "ko") ? "🇰🇷 한국인 승리!<br>韓国人の勝ち！" : "🇯🇵 日本人の勝ち！<br>일본인 승리!"}</div>
+      <div class="back">🇰🇷 ${s.ko} : ${s.ja} 🇯🇵</div><div class="ex" style="margin-top:12px">${s[me] >= s[op] ? "" : "다음엔 이길 거예요! · 次は勝てる！"}</div>`;
+    view("gEnd"); return;
+  }
+  const b = getBest(), s = G.score;
+  ["ko", "ja"].forEach(k => { if (s[k] > (b[k] || 0)) b[k] = s[k]; });
+  try { localStorage.setItem(BEST, JSON.stringify(b)); } catch {}
+  $("gResult").innerHTML = G.mode === "duel"
+    ? `<div style="font-size:2rem">${s.ko === s.ja ? "🤝 무승부 · 引き分け" : s.ko > s.ja ? "🇰🇷 한국인 승리!<br>韓国人の勝ち！" : "🇯🇵 日本人の勝ち！<br>일본인 승리!"}</div><div class="back">🇰🇷 ${s.ko} : ${s.ja} 🇯🇵</div>`
+    : `<div style="font-size:2rem">🏁 ${s[G.mode]}점 · 点</div><div class="back">최고 점수 · ベスト ${b[G.mode]}</div>`;
+  view("gEnd");
+}
+const nextQ = () => { G.n++; G.n < G.qs.length ? ask() : endGame(); };
+$("gNext").onclick = () => {
+  if (G.mode === "online") send({ t: "next", n: G.n });
+  nextQ();
+};
+$("gQuit").onclick = () => { clearInterval(G.timer); if (G.mode === "online") hangUp(); showBest(); view("gSetup"); };
+$("gAgain").onclick = () => {
+  if (G.mode !== "online") return startGame(G.mode);
+  if (!ON.conn || !ON.conn.open) return oMsg("상대와 연결이 끊겼어요 · 相手との接続が切れました"), view("gSetup");
+  const qs = makeQs(); send({ t: "start", qs }); startGame("online", qs);
+};
+$("gMenu").onclick = () => { if (G.mode === "online") hangUp(); showBest(); view("gSetup"); };
+
+// 온라인 대결 (PeerJS: 브라우저끼리 직접 연결, 무료 공개 중계 서버로 처음 연결만 맺음)
+// 방 코드 4자리 → peer id "hanil-game-XXXX". 방장이 문제를 만들어 상대에게 보냄.
+const ON = { peer: null, conn: null, side: null, mine: new Set(), theirs: new Set() };
+const PREFIX = "hanil-game-";
+const oMsg = h => $("oStatus").innerHTML = h;
+const send = m => { try { ON.conn && ON.conn.open && ON.conn.send(m); } catch {} };
+function loadPeer() {
+  if (window.Peer) return Promise.resolve();
+  return new Promise((ok, ng) => {
+    const sc = document.createElement("script");
+    sc.src = "https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js";
+    sc.onload = ok; sc.onerror = () => ng(new Error("load"));
+    document.head.append(sc);
+  });
+}
+function hangUp() { try { ON.conn && ON.conn.close(); ON.peer && ON.peer.destroy(); } catch {} ON.conn = ON.peer = null; }
+function onlineStatus() {
+  const n = G.n, me = ON.mine.has(n), op = ON.theirs.has(n);
+  $("oOpp").hidden = false;
+  $("oOpp").textContent = op ? (me ? "" : "⚡ 상대가 먼저 답했어요! · 相手がもう答えました！") : me ? "⏳ 상대를 기다리는 중… · 相手を待っています…" : "";
+  $("gNext").hidden = !(me && op);
+}
+function bubble(text) {
+  const b = document.createElement("div"); b.className = "bubble"; b.textContent = text;
+  document.body.append(b); setTimeout(() => b.remove(), 2200);
+}
+// 상대 언어도 함께 보이는 짧은 리액션 (서로의 말을 자연스럽게 접하게)
+const EMOTES = ["👏 대박! · すごい！", "😂 ㅋㅋㅋ · www", "😭 아깝다 · 惜しい", "🔥 잘한다 · 上手！", "🙏 고마워 · ありがとう", "👋 안녕 · よろしく"];
+$("oEmotes").innerHTML = EMOTES.map(e => `<button>${e}</button>`).join("");
+$("oEmotes").onclick = e => { const b = e.target.closest("button"); if (b) { send({ t: "emote", e: b.textContent }); bubble("나 · 私: " + b.textContent); } };
+function wire(conn) {
+  ON.conn = conn;
+  conn.on("data", m => {
+    if (m.t === "hello") { ON.side = m.side === "ko" ? "ja" : "ko"; oMsg(ON.side === "ko" ? "연결됐어요! 상대는 🇯🇵 일본인이에요" : "接続しました！相手は🇰🇷韓国人です"); }
+    if (m.t === "start") { ON.mine.clear(); ON.theirs.clear(); startGame("online", m.qs); bubble("🎮 시작! · スタート！"); }
+    if (m.t === "a") { ON.theirs.add(m.n); G.score[ON.side === "ko" ? "ja" : "ko"] = m.score; showScore(); if (m.n === G.n) onlineStatus(); }
+    if (m.t === "next" && m.n === G.n && !$("gPlay").hidden) nextQ();
+    if (m.t === "emote") bubble("상대 · 相手: " + m.e);
+  });
+  conn.on("close", () => { if (ON.conn === conn) { bubble("연결 끊김 · 切断されました"); oMsg("상대와 연결이 끊겼어요 · 相手との接続が切れました"); } });
+}
+async function host(side) {
+  hangUp(); ON.side = side;
+  oMsg("준비 중… · 準備中…");
+  try { await loadPeer(); } catch { return oMsg("온라인 기능을 불러오지 못했어요 · 読み込めませんでした"); }
+  const code = String(Math.floor(1000 + Math.random() * 9000));
+  const peer = ON.peer = new Peer(PREFIX + code);
+  peer.on("open", () => { oMsg(`이 코드를 상대에게 보내 주세요 · このコードを送ってください<span class="code">${code}</span><button id="oShare">🔗 초대 링크 보내기 · 招待リンクを送る</button><br>⏳ 기다리는 중 · 待機中`); shareBtn(code); });
+  peer.on("error", e => e.type === "unavailable-id" ? host(side) : oMsg("연결 오류 · 接続エラー (" + e.type + ")"));
+  peer.on("connection", conn => {
+    if (ON.conn && ON.conn.open) return conn.close();  // 1:1만
+    wire(conn);
+    conn.on("open", () => {
+      send({ t: "hello", side });
+      ON.mine.clear(); ON.theirs.clear();
+      const qs = makeQs(); send({ t: "start", qs }); startGame("online", qs);
+      bubble(side === "ko" ? "🇯🇵 일본인 친구가 들어왔어요!" : "🇰🇷 韓国人の友達が来ました！");
+    });
+  });
+}
+function shareBtn(code) {
+  const url = location.origin + location.pathname + "?room=" + code;
+  const text = "한·일 단어 대결 하자! · 日韓単語バトルしよう！ " + url;
+  $("oShare").onclick = async () => {
+    try { if (navigator.share) return await navigator.share({ text }); await navigator.clipboard.writeText(text); bubble("링크 복사됨 · コピーしました"); }
+    catch { prompt("링크 · リンク", url); }
+  };
+}
+async function join() {
+  const code = $("oCode").value.trim();
+  if (!/^\d{4}$/.test(code)) return oMsg("4자리 숫자를 넣어 주세요 · 4桁の数字を入れてください");
+  hangUp(); oMsg("연결 중… · 接続中…");
+  try { await loadPeer(); } catch { return oMsg("온라인 기능을 불러오지 못했어요 · 読み込めませんでした"); }
+  const peer = ON.peer = new Peer();
+  peer.on("error", e => oMsg(e.type === "peer-unavailable" ? "방을 찾을 수 없어요 · 部屋が見つかりません" : "연결 오류 · 接続エラー (" + e.type + ")"));
+  peer.on("open", () => wire(peer.connect(PREFIX + code, { reliable: true })));
+}
+document.querySelectorAll("[data-host]").forEach(b => b.onclick = () => host(b.dataset.host));
+$("oJoin").onclick = join;
+// 초대 링크 (?room=1234) 로 들어오면 바로 게임 탭 + 코드 입력
+// 친구랑 내기: 언어를 전혀 몰라도 소리로 맞힐 수 있는 단어 (외래어 + 같은 한자어)
+// [그림, 일본어, 일본어 읽기(한글), 한국어, 한국어 읽기(가나), 한자]
+const EZ = [
+  ["☕","コーヒー","코-히-","커피","コピ"], ["🍰","ケーキ","케-키","케이크","ケイク"], ["🍕","ピザ","피자","피자","ピジャ"],
+  ["🍔","ハンバーガー","함바-가-","햄버거","ヘムボゴ"], ["🍌","バナナ","바나나","바나나","バナナ"], ["🍫","チョコレート","초코레-토","초콜릿","チョコルリッ"],
+  ["🍦","アイスクリーム","아이스쿠리-무","아이스크림","アイスクリム"], ["🧃","ジュース","쥬-스","주스","ジュス"], ["📺","テレビ","테레비","텔레비전","テルレビジョン"],
+  ["🚌","バス","바스","버스","ボス"], ["🚕","タクシー","타쿠시-","택시","テクシ"], ["🏨","ホテル","호테루","호텔","ホテル"],
+  ["🎸","ギター","기타-","기타","ギタ"], ["🎹","ピアノ","피아노","피아노","ピアノ"], ["📷","カメラ","카메라","카메라","カメラ"],
+  ["🍅","トマト","토마토","토마토","トマト"], ["🍋","レモン","레몬","레몬","レモン"], ["🥗","サラダ","사라다","샐러드","セルロドゥ"],
+  ["🎮","ゲーム","게-무","게임","ゲイム"], ["🐧","ペンギン","펭긴","펭귄","ペングィン"], ["🍷","ワイン","와인","와인","ワイン"],
+  ["🥤","コーラ","코-라","콜라","コルラ"], ["🛋️","かぐ","카구","가구","カグ","家具"], ["🆓","むりょう","무료-","무료","ムリョ","無料"],
+  ["🍳","りょうり","료-리","요리","ヨリ","料理"], ["🌡️","おんど","온도","온도","オンド","温度"], ["🛣️","どうろ","도-로","도로","トロ","道路"],
+  ["👜","かばん","카방","가방","カバン","鞄"],
+];
+const CN = 10, HINT_MS = 3000;
+// 같은 링크를 받은 친구가 똑같은 문제를 풀도록 시드 고정 난수
+const rng = seed => () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+const shuf = (arr, r) => { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const C = { lang: "ko", seed: 0, qs: [], n: 0, right: 0, t0: 0, clock: null, hint: null, rival: null, log: [] };
+function chStart(lang, seed = Math.floor(Math.random() * 1e9), rival = null) {
+  const r = rng(seed), idx = EZ.map((_, i) => i);
+  Object.assign(C, { lang, seed, rival, n: 0, right: 0, log: [],
+    qs: shuf(idx, r).slice(0, CN).map(w => ({ w, opts: shuf([w, ...shuf(idx.filter(i => i !== w), r).slice(0, 3)], r) })) });
+  C.t0 = performance.now();
+  clearInterval(C.clock);
+  C.clock = setInterval(() => $("cClock").textContent = ((performance.now() - C.t0) / 1000).toFixed(1) + (lang === "ko" ? "초" : "秒"), 100);
+  view("cPlay"); chAsk();
+}
+function chAsk() {
+  const { w, opts } = C.qs[C.n], e = EZ[w], ko = C.lang === "ko";
+  const word = ko ? e[1] : e[3], read = ko ? e[2] : e[4], tl = ko ? "ja" : "ko";
+  $("cPos").textContent = `${C.n + 1} / ${CN}` + (C.rival ? ` · ${ko ? "친구 기록" : "友達の記録"} ${C.rival.right}/${CN}, ${C.rival.sec}${ko ? "초" : "秒"}` : "");
+  $("cQ").innerHTML = `<div class="big">${word}${say(word, tl)}</div><div class="ex" style="margin-top:8px">${ko ? "🔊 소리를 듣고 무엇인지 골라 보세요" : "🔊 音を聞いて何か選んでください"}</div><div class="hint" id="cHint"></div>`;
+  $("cChoices").innerHTML = opts.map(o => `<button data-o="${o}" aria-label="${ko ? EZ[o][3] : EZ[o][1]}">${EZ[o][0]}</button>`).join("");
+  if ("speechSynthesis" in window) speak(word, tl);
+  // 3초가 지나면 읽는 법 힌트 (모국어 글자로)
+  clearTimeout(C.hint);
+  C.hint = setTimeout(() => $("cHint").textContent = "💡 " + read, HINT_MS);
+}
+$("cChoices").onclick = ev => {
+  const b = ev.target.closest("button"); if (!b || b.disabled) return;
+  clearTimeout(C.hint);
+  const { w } = C.qs[C.n], e = EZ[w], ok = +b.dataset.o === w, ko = C.lang === "ko";
+  if (ok) C.right++;
+  C.log.push({ w, ok });
+  $("cChoices").querySelectorAll("button").forEach(x => { x.disabled = true; if (+x.dataset.o === w) x.classList.add("ok"); });
+  if (!ok) b.classList.add("ng");
+  $("cHint").innerHTML = `${ok ? "⭕" : "❌"} ${e[0]} ${e[1]}${e[5] ? ` (${e[5]})` : ""} = ${e[3]}`;
+  setTimeout(() => { C.n++; C.n < CN ? chAsk() : chEnd(); }, ok ? 700 : 1400);
+};
+function chEnd() {
+  clearInterval(C.clock); clearTimeout(C.hint);
+  const sec = ((performance.now() - C.t0) / 1000).toFixed(1), ko = C.lang === "ko";
+  C.sec = sec;
+  let vs = "";
+  if (C.rival) {
+    const win = C.right > C.rival.right || (C.right === C.rival.right && +sec < +C.rival.sec);
+    const tie = C.right === C.rival.right && sec === C.rival.sec;
+    vs = `<div style="font-size:1.5rem;margin-top:8px">${tie ? (ko ? "🤝 무승부!" : "🤝 引き分け！") : win ? (ko ? "🏆 친구를 이겼어요!" : "🏆 友達に勝った！") : (ko ? "😭 졌어요… 다시 도전!" : "😭 負けた…もう一回！")}</div>
+      <div class="ex">${ko ? "친구" : "友達"} ${C.rival.right}/${CN} · ${C.rival.sec}${ko ? "초" : "秒"}</div>`;
+  }
+  $("cResult").innerHTML = `<div style="font-size:2.4rem">${C.right}/${CN}</div><div>⏱ ${sec}${ko ? "초" : "秒"}</div>${vs}
+    <div class="ex" style="margin-top:10px">${ko ? `방금 일본어 단어 ${CN}개를 들었어요!` : `いま韓国語の単語を${CN}個聞きました！`}</div>`;
+  $("cLearnedT").textContent = ko ? "📒 오늘 만난 일본어" : "📒 今日出会った韓国語";
+  $("cLearned").innerHTML = C.log.map(({ w, ok }) => { const e = EZ[w], t = ko ? e[1] : e[3];
+    return `<div class="phrase">${ok ? "⭕" : "❌"} ${e[0]} <b>${t}</b>${say(t, ko ? "ja" : "ko")} <span class="ko">${ko ? e[2] : e[4]}${e[5] ? " · " + e[5] : ""} = ${ko ? e[3] : e[1]}</span></div>`; }).join("");
+  view("cEnd");
+}
+$("cShare").onclick = async () => {
+  const ko = C.lang === "ko";
+  const url = `${location.origin}${location.pathname}?ch=${C.lang}.${C.seed}.${C.right}.${C.sec}`;
+  const text = ko ? `일본어 하나도 몰라도 맞힐 수 있대! 나는 ${C.right}/${CN}, ${C.sec}초 🎯 너는 이길 수 있어? ${url}`
+                  : `韓国語まったく知らなくても分かるらしい！私は${C.right}/${CN}、${C.sec}秒 🎯 勝てる？ ${url}`;
+  try { if (navigator.share) return await navigator.share({ text }); await navigator.clipboard.writeText(text); bubble(ko ? "도전장 복사됨! 친구에게 붙여넣기 하세요" : "コピーしました！友達に送ってね"); }
+  catch { prompt(ko ? "도전장 링크" : "挑戦状リンク", text); }
+};
+$("cAgain").onclick = () => chStart(C.lang);
+$("cMenu").onclick = () => { clearInterval(C.clock); view("gSetup"); };
+document.querySelectorAll("[data-ch]").forEach(b => b.onclick = () => chStart(b.dataset.ch));
+// 도전장 링크 (?ch=언어.시드.맞힌수.초) 로 들어오면 같은 문제로 바로 도전
+const ch = new URLSearchParams(location.search).get("ch");
+if (ch) {
+  const [lang, seed, right, sec] = ch.split(".").length === 5 ? (([a, b, c, d, e]) => [a, b, c, d + "." + e])(ch.split(".")) : ch.split(".");
+  if ((lang === "ko" || lang === "ja") && /^\d+$/.test(seed) && /^\d+$/.test(right) && /^[\d.]+$/.test(sec)) {
+    document.querySelector('[data-tab=game]').click();
+    const ko = lang === "ko";
+    $("cInvite").hidden = false;
+    $("cInvite").innerHTML = `${ko ? `📨 친구가 도전장을 보냈어요! 기록 ${right}/${CN}, ${sec}초` : `📨 友達から挑戦状！記録 ${right}/${CN}、${sec}秒`}<br><button id="cAccept">${ko ? "도전하기 🔥" : "挑戦する 🔥"}</button>`;
+    $("cAccept").onclick = () => chStart(lang, +seed, { right: +right, sec });
+  }
+}
+// 갈림길 러너: 위에서 내려오는 두 문 중 맞는 뜻 쪽으로 무리를 옮기면 인원이 늘어남
+const R = { on: false };
+const RGATES = 15;
+const rBestGet = () => { try { return JSON.parse(localStorage.getItem("jp-run-best")) || {}; } catch { return {}; } };
+const rShowBest = () => { const b = rBestGet(); $("rBest").textContent = `최고 기록 · ベスト: 🇰🇷 ${Math.max(b["ko.easy"] || 0, b["ko.normal"] || 0)}명 / 🇯🇵 ${Math.max(b["ja.easy"] || 0, b["ja.normal"] || 0)}人`; };
+// 문제 1개: { q: 문제 글자, read: 발음 힌트, tl: 읽기 언어, opts: [왼쪽, 오른쪽] 표시 글자, ok: 정답 쪽(0/1), learn: 정답 설명 }
+function rMakeQ() {
+  const [lang, diff] = R.key.split("."), ko = lang === "ko", r = Math.random;
+  if (diff === "easy") {
+    const w = Math.floor(r() * EZ.length); let o; do o = Math.floor(r() * EZ.length); while (o === w);
+    const e = EZ[w], ok = r() < .5 ? 0 : 1, opts = ok ? [EZ[o][0], e[0]] : [e[0], EZ[o][0]];
+    return { q: ko ? e[1] : e[3], read: ko ? e[2] : e[4], tl: ko ? "ja" : "ko", opts, ok, emoji: true,
+      learn: `${e[0]} ${e[1]}${e[5] ? ` (${e[5]})` : ""} · ${e[3]}`, sayT: ko ? e[1] : e[3] };
+  }
+  const w = Math.floor(r() * W.length); let o; do o = Math.floor(r() * W.length); while (o === w);
+  const label = i => ko ? W[i][2].split(",")[0] : W[i][0];
+  const ok = r() < .5 ? 0 : 1, opts = ok ? [label(o), label(w)] : [label(w), label(o)];
+  const [jp, yomi, kom] = W[w];
+  return { q: ko ? jp : KR[jp][0], read: ko ? yomi : KR[jp][1], tl: ko ? "ja" : "ko", opts, ok,
+    learn: `${jp} (${yomi}) · ${KR[jp][0]} (${KR[jp][1]})${kom === KR[jp][0] ? "" : " · " + kom}`, sayT: ko ? jp : KR[jp][0] };
+}
+function rStart(key) {
+  Object.assign(R, { key, on: true, crowd: 5, x: .5, tx: .5, gate: null, n: 0, log: [], fx: [], scroll: 0, last: performance.now(), wait: .6 });
+  view("rPlay"); rResize(); requestAnimationFrame(rLoop);
+}
+function rResize() { const c = $("rCv"), d = devicePixelRatio || 1; c.width = c.clientWidth * d; c.height = c.clientHeight * d; }
+addEventListener("resize", () => R.on && rResize());
+function rSpawn() {
+  const q = rMakeQ();
+  // 점점 빨라짐: 5초 → 2.8초 동안 내려옴
+  R.gate = { ...q, y: 0, dur: Math.max(2.8, 5 - R.n * .15), t0: performance.now() };
+  if ("speechSynthesis" in window) speak(q.sayT, q.tl);
+}
+function rPass() {
+  const g = R.gate, side = R.x < .5 ? 0 : 1, right = side === g.ok;
+  const before = R.crowd;
+  // 20명 전까지는 +5~10, 그 뒤로는 ×1.5 (최대 999)
+  if (right) R.crowd = R.crowd < 20 ? R.crowd + 5 + Math.floor(Math.random() * 6) : Math.min(999, Math.round(R.crowd * 1.5));
+  else R.crowd = Math.max(0, R.crowd - Math.max(3, Math.ceil(R.crowd * .4)));
+  const d = R.crowd - before;
+  R.fx.push({ text: right ? (before >= 20 ? "×1.5" : "+" + d) : String(d), good: right, t: performance.now() });
+  R.log.push({ learn: g.learn, ok: right, sayT: g.sayT, tl: g.tl });
+  R.gate = null; R.n++; R.wait = .7;
+  if (R.crowd <= 0 || R.n >= RGATES) setTimeout(rEnd, 500);
+}
+function rLoop(now) {
+  if (!R.on) return;
+  const dt = Math.min(.05, (now - R.last) / 1000); R.last = now;
+  R.x += (R.tx - R.x) * Math.min(1, dt * 12);
+  R.scroll = (R.scroll + dt * 220) % 80;
+  if (!R.gate && R.n < RGATES && R.crowd > 0) { R.wait -= dt; if (R.wait <= 0) rSpawn(); }
+  if (R.gate) { R.gate.y = (now - R.gate.t0) / 1000 / R.gate.dur; if (R.gate.y >= 1) rPass(); }
+  rDraw(now);
+  requestAnimationFrame(rLoop);
+}
+function rDraw(now) {
+  const c = $("rCv"), x = c.getContext("2d"), d = devicePixelRatio || 1, Wd = c.width / d, H = c.height / d;
+  const css = getComputedStyle(document.documentElement), col = n => css.getPropertyValue(n).trim();
+  x.setTransform(d, 0, 0, d, 0, 0);
+  x.fillStyle = col("--card"); x.fillRect(0, 0, Wd, H);
+  // 길 가운데 점선
+  x.strokeStyle = col("--line"); x.lineWidth = 4; x.setLineDash([40, 40]); x.lineDashOffset = -R.scroll;
+  x.beginPath(); x.moveTo(Wd / 2, 0); x.lineTo(Wd / 2, H); x.stroke(); x.setLineDash([]);
+  const top = 70, py = H - 70;  // 문이 지나가는 구간: top → py
+  x.textAlign = "center"; x.textBaseline = "middle"; x.fillStyle = col("--text");
+  // 상단: 문제
+  const g = R.gate;
+  x.font = "600 15px system-ui,sans-serif"; x.fillStyle = col("--muted");
+  x.fillText(`${Math.min(R.n + 1, RGATES)} / ${RGATES}`, 34, 18);
+  if (g) {
+    x.fillStyle = col("--text"); x.font = "700 30px system-ui,sans-serif"; x.fillText(g.q, Wd / 2, 28);
+    // 절반쯤 내려오면 발음 힌트
+    if (g.y > .45) { x.fillStyle = col("--accent"); x.font = "600 16px system-ui,sans-serif"; x.fillText("💡 " + g.read, Wd / 2, 56); }
+    const gy = top + (py - 40 - top) * g.y, gh = 56;
+    [0, 1].forEach(s => {
+      const gx = s ? Wd / 2 + 6 : 6, gw = Wd / 2 - 12;
+      x.fillStyle = s ? "#4a8fe7cc" : "#e0a03acc";
+      x.beginPath(); x.roundRect(gx, gy, gw, gh, 10); x.fill();
+      x.fillStyle = "#fff"; x.font = g.emoji ? "34px system-ui,sans-serif" : "700 18px system-ui,sans-serif";
+      let t = g.opts[s]; while (!g.emoji && x.measureText(t).width > gw - 12 && t.length > 2) t = t.slice(0, -2) + "…";
+      x.fillText(t, gx + gw / 2, gy + gh / 2 + 1);
+    });
+  }
+  // 무리 (사람 수만큼 점, 많으면 일부만 그림)
+  const cx = 12 + R.x * (Wd - 24), shown = Math.min(R.crowd, 80);
+  for (let i = 0; i < shown; i++) {
+    const a = i * 2.4, rr = 7 * Math.sqrt(i);
+    const bob = Math.sin(now / 90 + i) * 1.5;
+    x.fillStyle = i % 2 ? col("--accent") : "#4a8fe7";
+    x.beginPath(); x.arc(cx + Math.cos(a) * rr, py + Math.sin(a) * rr * .5 + bob, 7, 0, 7); x.fill();
+  }
+  x.fillStyle = col("--text"); x.font = "700 18px system-ui,sans-serif";
+  x.fillText(`🏃 ${R.crowd}`, Math.min(Wd - 40, Math.max(40, cx)), py - 34 - Math.min(30, Math.sqrt(shown) * 2));
+  // 효과 글자
+  R.fx = R.fx.filter(f => now - f.t < 900);
+  R.fx.forEach(f => { const k = (now - f.t) / 900; x.globalAlpha = 1 - k; x.fillStyle = f.good ? "#2f9e55" : col("--accent");
+    x.font = "800 34px system-ui,sans-serif"; x.fillText(f.text, Math.min(Wd - 40, Math.max(40, cx)), py - 70 - k * 40); x.globalAlpha = 1; });
+}
+function rEnd() {
+  if (!R.on) return;
+  R.on = false;
+  const ko = R.key.startsWith("ko"), b = rBestGet(), right = R.log.filter(l => l.ok).length;
+  const nb = R.crowd > (b[R.key] || 0); if (nb) { b[R.key] = R.crowd; try { localStorage.setItem("jp-run-best", JSON.stringify(b)); } catch {} }
+  $("rResult").innerHTML = R.crowd <= 0
+    ? `<div style="font-size:2rem">😵 ${ko ? "모두 흩어졌어요!" : "みんな散らばった！"}</div><div class="back">${ko ? `${R.n}번째 문에서 끝` : `${R.n}個目のゲートで終了`}</div>`
+    : `<div style="font-size:2.4rem">🏁 ${R.crowd}${ko ? "명" : "人"}</div><div class="back">${nb ? (ko ? "🎉 최고 기록!" : "🎉 ベスト更新！") : ""} ${ko ? `정답 ${right}/${R.n}` : `正解 ${right}/${R.n}`}</div>`;
+  $("rLearnedT").textContent = ko ? "📒 지나온 단어" : "📒 通ってきた単語";
+  $("rLearned").innerHTML = R.log.map(l => `<div class="phrase">${l.ok ? "⭕" : "❌"} ${l.learn}${say(l.sayT, l.tl)}</div>`).join("");
+  rShowBest(); view("rEnd");
+}
+// 조작: 키보드 ←→ / 화면 누르거나 끌기
+addEventListener("keydown", e => {
+  if (!R.on) return;
+  if (e.key === "ArrowLeft" || e.key === "a") { R.tx = .25; e.preventDefault(); }
+  if (e.key === "ArrowRight" || e.key === "d") { R.tx = .75; e.preventDefault(); }
+});
+const rPoint = e => { if (!R.on) return; const b = $("rCv").getBoundingClientRect(); R.tx = Math.min(1, Math.max(0, (e.clientX - b.left) / b.width)); };
+$("rCv").addEventListener("pointerdown", e => { $("rCv").setPointerCapture(e.pointerId); rPoint(e); });
+$("rCv").addEventListener("pointermove", e => { if (e.buttons) rPoint(e); });
+document.querySelectorAll("[data-run]").forEach(b => b.onclick = () => rStart(b.dataset.run));
+$("rQuit").onclick = () => { R.on = false; rShowBest(); view("gSetup"); };
+$("rAgain").onclick = () => rStart(R.key);
+$("rMenu").onclick = () => view("gSetup");
+rShowBest();
+
+const room = new URLSearchParams(location.search).get("room");
+if (room) { $("oCode").value = room; document.querySelector('[data-tab=game]').click(); }
+document.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => startGame(b.dataset.mode));
+showBest();
 
 renderList();
 renderCard();
+
+// ── 홈: 이어서 하기, 메뉴 타일, 오늘의 단어, 글자 크기
+const TAB_NAME = { list:"단어장", flash:"카드", talk:"회화", listen:"듣기", rec:"기록", game:"게임" };
+const goTab = id => { const b = document.querySelector(`nav [data-tab="${id}"]`); if (b) { b.click(); scrollTo(0, 0); } };
+document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => goTab(b.dataset.go));
+if (document.querySelector('nav [data-tab="game"]')) $("tileGame").hidden = false;
+document.querySelectorAll("nav button").forEach(b => b.addEventListener("click", () => {
+  if (b.dataset.tab !== "home") try { localStorage.setItem("jp-last", b.dataset.tab); } catch {}
+  if (b.dataset.tab === "home") renderHome();
+}));
+function renderHome() {
+  let last; try { last = localStorage.getItem("jp-last"); } catch {}
+  if (last && TAB_NAME[last]) {
+    $("contT").textContent = "이어서 하기";
+    $("contS").textContent = last === "flash" ? `카드 ${i + 1}번째부터 · 외운 단어 ${done.size}개` : `${TAB_NAME[last]} 하던 곳으로 가요`;
+  }
+  $("cont").onclick = () => goTab(last && TAB_NAME[last] ? last : "list");
+  $("tileList").textContent = `${W.length}개 중 ${done.size}개 외움`;
+  const d = new Date(), w = W[(d.getFullYear() * 372 + d.getMonth() * 31 + d.getDate()) % W.length];
+  $("today").innerHTML = `<div><div class="jp" lang="ja">${w[0]}</div><span class="rd" lang="ja">${w[1]}</span><div style="margin-top:6px">${w[2]}</div></div>
+    <button class="say" data-say="${w[1]}" aria-label="읽기: ${w[1]}">🔊</button>`;
+}
+const setFs = v => {
+  document.documentElement.style.setProperty("--fs", v + "rem");
+  document.querySelectorAll("[data-fs]").forEach(b => b.setAttribute("aria-pressed", b.dataset.fs === String(v)));
+  try { localStorage.setItem("jp-fs", v); } catch {}
+};
+document.querySelectorAll("[data-fs]").forEach(b => b.onclick = () => setFs(b.dataset.fs));
+try { const v = localStorage.getItem("jp-fs"); if (v) setFs(v); } catch {}
+renderHome();
 </script>
 </body>
 </html>
