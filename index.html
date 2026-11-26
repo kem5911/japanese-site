@@ -288,6 +288,19 @@
 
   /* 게임하는 동안: 위·아래 메뉴를 숨기고 게임만 크게 */
   [hidden] { display:none !important; }
+  #toast { width:max-content; max-width:calc(100vw - 32px); text-align:center; }
+  .langsw { min-height:40px; padding:4px 12px; border:2px solid var(--navy); background:var(--card); color:var(--text); border-radius:8px; font-weight:900; cursor:pointer; }
+  @media (prefers-color-scheme: dark) { .langsw { border-color:var(--text); } }
+  .kr { font-family:"Noto Sans KR",sans-serif; }
+  .kt { color:var(--L-list); font-weight:700; margin-left:6px; font-size:.95rem; }
+  .welcome { position:fixed; inset:0; z-index:50; background:#0f1a33e6; display:grid; place-items:center; padding:max(16px,env(safe-area-inset-left,0px)); }
+  .wbox { width:100%; max-width:420px; background:var(--lcd); color:#fff; border-radius:14px; padding:20px 18px; box-shadow:inset 0 0 0 4px #26324d; display:grid; gap:12px; }
+  .wnx { color:var(--next); font-weight:900; font-size:.85rem; letter-spacing:.06em; }
+  .wbox h2 { margin:0; color:#fff; font-size:1.3rem; } .wbox h2::before { display:none; }
+  .wpick { display:flex; gap:14px; align-items:center; text-align:left; background:#fff; color:#1a1f2b; border:0; border-radius:10px; padding:14px; cursor:pointer; box-shadow:0 4px 0 var(--tenji); }
+  .wpick.rec { outline:4px solid var(--next); }
+  .wpick .fl { font-size:2rem; } .wpick b { display:block; font-size:1.15rem; } .wpick small { color:#5a6170; font-size:.82rem; }
+  .wnote { margin:0; font-size:.8rem; color:#b9c4dd; }
   body.playing { padding-bottom:0; }
   body.playing #rCv { height:min(78vh,640px); }
   body.playing header, body.playing nav, body.playing #game > .lineh { display:none; }
@@ -478,6 +491,47 @@
 </main>
 <div id="toast" role="status" aria-live="polite"></div>
 
+<script>
+// ── 언어 ── "ko": 한국인이 일본어를 배우는 화면 / "ja": 日本人が韓国語を学ぶ画面
+// 처음 열면 고르게 하고(폰 언어로 미리 추천), 고른 값은 이 기기에 기억해 둠.
+const LANG_KEY = "kj-lang";
+const LANG_SAVED = (() => { try { const v = localStorage.getItem(LANG_KEY); return v === "ko" || v === "ja" ? v : null; } catch { return null; } })();
+const LANG = LANG_SAVED || (/^ja/i.test(navigator.language) ? "ja" : "ko");
+const JA = LANG === "ja";
+const tr = (ko, ja) => JA ? ja : ko;
+document.documentElement.lang = LANG;
+function setLang(v) {
+  try { localStorage.setItem(LANG_KEY, v); localStorage.setItem("jp-rec-lang", v); } catch {}
+  if (v !== LANG) location.reload();
+}
+
+// 한글 → 가타카나 읽기 (日本人向けの目安。받침이 뒤로 넘어가는 소리(연음)는 반영하지 않음)
+const kata = (() => {
+  const ROW = {0:"カキクケコ",1:"カキクケコ",2:"ナニヌネノ",3:"タ,ティ,トゥ,テ,ト",4:"タ,ティ,トゥ,テ,ト",5:"ラリルレロ",6:"マミムメモ",7:"パピプペポ",8:"パピプペポ",9:"サシスセソ",10:"サシスセソ",11:"アイウエオ",12:"チャ,チ,チュ,チェ,チョ",13:"チャ,チ,チュ,チェ,チョ",14:"チャ,チ,チュ,チェ,チョ",15:"カキクケコ",16:"タ,ティ,トゥ,テ,ト",17:"パピプペポ",18:"ハヒフヘホ"};
+  const VOICED = {0:"ガギグゲゴ",3:"ダ,ディ,ドゥ,デ,ド",7:"バビブベボ",12:"ジャ,ジ,ジュ,ジェ,ジョ"};
+  const cols = s => s.includes(",") ? s.split(",") : [...s];
+  const VW = [[0],[3],[0,"y"],[3,"y"],[4],[3],[4,"y"],[3,"y"],[4],[0,"w"],[3,"w"],[3,"w"],[4,"y"],[2],[4,"w"],[3,"w"],[1,"w"],[2,"y"],[2],[1,"w"],[1]];
+  const SMALL = { y:["ャ","","ュ","ェ","ョ"], w:["ァ","ィ","","ェ","ォ"] };
+  const FIN = {1:"ク",2:"ク",4:"ン",7:"ッ",8:"ル",16:"ム",17:"プ",19:"ッ",20:"ッ",21:"ン",22:"ッ",23:"ッ",24:"ク",25:"ッ",26:"プ",27:"ッ"};
+  return word => {
+    let out = "", prevFin = -1;
+    for (const ch of word) {
+      const n = ch.charCodeAt(0) - 44032;
+      if (n < 0 || n > 11171) { out += /[\s]/.test(ch) ? " " : /[?？]/.test(ch) ? "？" : /[.,。、!]/.test(ch) ? ch : ""; prevFin = -1; continue; }
+      const a = Math.floor(n / 588), b = Math.floor(n % 588 / 28), c = n % 28, [col, semi] = VW[b];
+      const soft = prevFin === 0 || [4, 8, 16, 21].includes(prevFin);
+      const row = cols((soft && VOICED[a]) || ROW[a]);
+      let s;
+      if (!semi) s = row[col];
+      else if (a === 11) s = semi === "y" ? {0:"ヤ",2:"ユ",3:"イェ",4:"ヨ"}[col] : {0:"ワ",1:"ウィ",3:"ウェ",4:"ウォ"}[col];
+      else if (semi === "y") s = row[1] + SMALL.y[col];
+      else s = row[2].replace(/ゥ$/, "") + SMALL.w[col];
+      out += s + (FIN[c] || ""); prevFin = c;
+    }
+    return out.trim();
+  };
+})();
+</script>
 <script>
 const W = [
   ["経験","けいけん","경험","海外で働いた経験があります。"],
@@ -674,12 +728,14 @@ try { done = new Set(JSON.parse(localStorage.getItem(KEY)) || []); } catch { don
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify([...done])); } catch {} };
 const toggle = w => { const add = !done.has(w); add ? done.add(w) : done.delete(w); save(); renderList(); renderCard(); if (window.Rec) Rec.words(done.size, add); };
 const $ = id => document.getElementById(id);
+// 일본인용: 단어의 대표 한국어와 가타카나 읽기
+const krOf = w => { try { if (KR[w[0]]) return KR[w[0]]; } catch {} const k = w[2].split(",")[0].trim(); return [k, kata(k)]; };
 
 // 음성 읽기 (Web Speech API)
 const say = (t, lang = "ja") => `<button class="say" data-say="${t}" data-lang="${lang}" aria-label="읽기: ${t}">🔊</button>`;
 $("rate").oninput = () => $("rateVal").textContent = (+$("rate").value).toFixed(1) + "x";
 function speak(text, lang = "ja") {
-  if (!("speechSynthesis" in window)) return alert("이 브라우저는 음성 읽기를 지원하지 않아요.");
+  if (!("speechSynthesis" in window)) return alert(tr("이 브라우저는 음성 읽기를 지원하지 않아요.", "このブラウザは読み上げに対応していません。"));
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = lang === "ko" ? "ko-KR" : "ja-JP";
@@ -701,13 +757,15 @@ document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
 
 // 단어장
 function renderList() {
-  $("count").textContent = `외운 단어 ${done.size} / ${W.length}`;
+  $("count").textContent = tr(`외운 단어 ${done.size} / ${W.length}`, `覚えた単語 ${done.size} / ${W.length}`);
   $("words").innerHTML = "";
   W.filter(w => !($("hideDone").checked && done.has(w[0]))).forEach(([jp, yomi, ko, ex]) => {
     const el = document.createElement("label");
     el.className = "word" + (done.has(jp) ? " done" : "");
-    el.innerHTML = `<input type="checkbox" ${done.has(jp) ? "checked" : ""}>
-      <div><span class="jp">${jp}</span>${say(jp)}<span class="yomi">${yomi}</span> — ${ko}<div class="ex">${ex}${say(ex)}</div></div>`;
+    const [k, kt] = krOf([jp, yomi, ko]);
+    el.innerHTML = `<input type="checkbox" ${done.has(jp) ? "checked" : ""}>` + (JA
+      ? `<div><span class="jp kr" lang="ko">${k}</span>${say(k, "ko")}<span class="kt">${kt}</span><div class="ex">${jp}（${yomi}）</div></div>`
+      : `<div><span class="jp">${jp}</span>${say(jp)}<span class="yomi">${yomi}</span> — ${ko}<div class="ex">${ex}${say(ex)}</div></div>`);
     el.querySelector("input").onchange = () => toggle(jp);
     $("words").append(el);
   });
@@ -719,15 +777,20 @@ let order = W.map((_, i) => i), i = 0, flipped = false;
 const deck = () => order.filter(n => !($("skipDone").checked && done.has(W[n][0])));
 function renderCard() {
   const d = deck();
-  if (!d.length) { $("card").innerHTML = "🎉 모든 단어를 외웠어요!"; $("pos").textContent = "0 / 0"; $("mark").hidden = true; return; }
+  if (!d.length) { $("card").innerHTML = tr("🎉 모든 단어를 외웠어요!", "🎉 全部覚えました！"); $("pos").textContent = "0 / 0"; $("mark").hidden = true; return; }
   i = (i + d.length) % d.length;
   const [jp, yomi, ko, ex] = W[d[i]];
   $("pos").textContent = `${i + 1} / ${d.length}`;
-  $("card").innerHTML = `<div class="jp">${jp}${say(jp)}</div>` + (flipped
-    ? `<div class="back"><b>${yomi}</b><br>${ko}<br><span class="ex">${ex}</span>${say(ex)}</div>`
-    : `<div class="ex" style="margin-top:16px">눌러서 뜻 보기</div>`);
+  const [k, kt] = krOf(W[d[i]]);
+  $("card").innerHTML = JA
+    ? `<div class="jp kr" lang="ko">${k}${say(k, "ko")}</div>` + (flipped
+      ? `<div class="back"><b>${kt}</b><br>${jp}（${yomi}）</div>`
+      : `<div class="ex" style="margin-top:16px">タップで意味を見る</div>`)
+    : `<div class="jp">${jp}${say(jp)}</div>` + (flipped
+      ? `<div class="back"><b>${yomi}</b><br>${ko}<br><span class="ex">${ex}</span>${say(ex)}</div>`
+      : `<div class="ex" style="margin-top:16px">눌러서 뜻 보기</div>`);
   $("mark").hidden = false;
-  $("mark").textContent = done.has(jp) ? "✅ 외움 (취소)" : "☐ 외웠어요";
+  $("mark").textContent = done.has(jp) ? tr("✅ 외움 (취소)", "✅ 覚えた（取り消す）") : tr("☐ 외웠어요", "☐ 覚えた");
 }
 const go = step => { i += step; flipped = false; renderCard(); };
 $("card").onclick = () => { flipped = !flipped; renderCard(); if (flipped && window.Rec) Rec.card(); };
@@ -739,8 +802,10 @@ $("shuffle").onclick = () => { order.sort(() => Math.random() - 0.5); i = 0; fli
 $("skipDone").onchange = () => { i = 0; flipped = false; renderCard(); };
 
 // 회화
-$("talk").innerHTML = Object.entries(T).map(([title, list]) =>
-  `<h2>${title}</h2>` + list.map(([jp, ko]) => `<div class="phrase"><div>${jp}${say(jp)}</div><div class="ko">${ko}</div></div>`).join("")
+const T_JA = { "🏪 편의점":"🏪 コンビニ", "🍜 식당":"🍜 食堂", "🚉 역":"🚉 駅", "💼 아르바이트 면접":"💼 バイトの面接" };
+$("talk").innerHTML = Object.entries(T).map(([title, list]) => JA
+  ? `<h2>${T_JA[title] || title}</h2>` + list.map(([jp, ko]) => `<div class="phrase"><div class="kr" lang="ko">${ko}${say(ko, "ko")}</div><div class="ko"><span class="kt" style="margin:0">${kata(ko)}</span><br>${jp}</div></div>`).join("")
+  : `<h2>${title}</h2>` + list.map(([jp, ko]) => `<div class="phrase"><div>${jp}${say(jp)}</div><div class="ko">${ko}</div></div>`).join("")
 ).join("");
 
 // ── 듣기 모드 ──
@@ -834,7 +899,8 @@ function segShow(podOn) {
 }
 $("segShort").onclick = () => segShow(false);
 $("segPod").onclick = () => segShow(true);
-$("podList").innerHTML = POD.map((s, si) =>
+if (JA) { segShow(true); document.querySelector("#listen .seg").hidden = true; }
+$("podList").innerHTML = POD.map((s, si) => JA && s.lang !== "ko" ? "" :
   `<div class="pod-show">${s.lang === "ja" ? "🇯🇵" : "🇰🇷"} ${s.show} <a href="${s.home}" target="_blank" rel="noopener" aria-label="제작자 페이지">🔗</a><br><small>${s.note}</small></div>` +
   s.eps.map((e, ei) => `<div class="phrase pod-ep" data-s="${si}" data-e="${ei}"><span>${e[0]}</span><span class="dur">${e[1] ? fmt(e[1]) : ""}</span></div>`).join("")
 ).join("");
@@ -1498,7 +1564,7 @@ renderList();
 renderCard();
 
 // ── 홈: 이어서 하기, 메뉴 타일, 오늘의 단어, 글자 크기
-const TAB_NAME = { list:"단어장", flash:"카드", talk:"회화", listen:"듣기", rec:"기록", game:"게임" };
+const TAB_NAME = JA ? { list:"単語帳", flash:"カード", talk:"会話", listen:"リスニング", rec:"記録", game:"ゲーム" } : { list:"단어장", flash:"카드", talk:"회화", listen:"듣기", rec:"기록", game:"게임" };
 const goTab = id => { const b = document.querySelector(`nav [data-tab="${id}"]`); if (b) { b.click(); scrollTo(0, 0); } };
 document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => goTab(b.dataset.go));
 if (document.querySelector('nav [data-tab="game"]')) $("tileGame").hidden = false;
@@ -1509,11 +1575,11 @@ document.querySelectorAll("nav button").forEach(b => b.addEventListener("click",
 function renderHome() {
   let last; try { last = localStorage.getItem("jp-last"); } catch {}
   if (last && TAB_NAME[last]) {
-    $("contT").textContent = "이어서 하기";
-    $("contS").textContent = last === "flash" ? `카드 ${i + 1}번째부터 · 외운 단어 ${done.size}개` : `${TAB_NAME[last]} 하던 곳으로 가요`;
+    $("contT").textContent = tr("이어서 하기", "つづきから");
+    $("contS").textContent = last === "flash" ? tr(`카드 ${i + 1}번째부터 · 외운 단어 ${done.size}개`, `カード ${i + 1}枚目から · 覚えた単語 ${done.size}`) : tr(`${TAB_NAME[last]} 하던 곳으로 가요`, `${TAB_NAME[last]}の続きへ`);
   }
   $("cont").onclick = () => goTab(last && TAB_NAME[last] ? last : "list");
-  $("tileList").textContent = `${W.length}개 중 ${done.size}개 외움`;
+  $("tileList").textContent = tr(`${W.length}개 중 ${done.size}개 외움`, `${W.length}語中 ${done.size}語 覚えた`);
   const d = new Date(), w = W[(d.getFullYear() * 372 + d.getMonth() * 31 + d.getDate()) % W.length];
   $("today").innerHTML = `<div><div class="jp" lang="ja">${w[0]}</div><span class="rd" lang="ja">${w[1]}</span><div style="margin-top:6px">${w[2]}</div></div>
     <button class="say" data-say="${w[1]}" aria-label="읽기: ${w[1]}">🔊</button>`;
@@ -1550,6 +1616,7 @@ const LINES = { list:["T","01","단어장","単語帳 · Tango-chō"], flash:["C
   listen:["L","04","듣기","リスニング · Risuningu"], game:["G","05","게임","ゲーム · Gēmu"], rec:["R","06","내 기록","記録 · Kiroku"] };
 const lineh = id => { if ($(id).firstElementChild?.classList.contains("lineh")) return; const [c, n, ko, ja] = LINES[id];
   $(id).insertAdjacentHTML("afterbegin", `<div class="lineh"><div class="in"><span class="no"><i>${c}</i><b>${n}</b></span><div><b class="n">${ko}</b><small>${ja}</small></div></div><div class="band"></div><div class="tenji"></div></div>`); };
+if (JA) for (const id in LINES) { const l = LINES[id], [ja, ro] = l[3].split(" · "); LINES[id] = [l[0], l[1], ja, `${l[2]} · ${ro}`]; }
 for (const id in LINES) { lineh(id); new MutationObserver(() => lineh(id)).observe($(id), { childList:true }); }
 
 // 이어서 하기 = 차내 안내 화면
@@ -1569,9 +1636,9 @@ $("cont").addEventListener("click", chime);
 const TRAINS = [["各停","--L-list","list","단어장","単語帳",1],["快速","--L-flash","flash","카드","カード",2],["急行","--L-talk","talk","상황 회화","会話",3],
   ["普通","--L-listen","listen","듣기","リスニング",4],["特急","--L-game","game","게임","ゲーム",5],["準急","--L-rec","rec","내 기록","記録",6]];
 document.querySelector(".tiles").insertAdjacentHTML("afterend", `<div class="board" role="list">
-  <div class="bh"><span>種別 종류</span><span>行先 행선지</span><span>番線</span></div>
-  ${TRAINS.map(([k, c, id, ko, ja, p]) => `<button class="row" role="listitem" data-go2="${id}"><span class="kind" style="--c:var(${c})">${k}</span><span class="dest"><b>${ko} 行</b><small>${ja} 行き</small></span><span class="pl">${p}<small>番線</small></span></button>`).join("")}
-  <div class="ticker" aria-hidden="true"><span>まもなく 1番線に 各停 単語帳行きが まいります · 곧 1번 승강장에 단어장행 열차가 들어옵니다 · 黄色い線の内側でお待ちください · 노란 선 안쪽에서 기다려 주세요</span></div>
+  <div class="bh"><span>${tr("種別 종류", "種別")}</span><span>${tr("行先 행선지", "行先")}</span><span>番線</span></div>
+  ${TRAINS.map(([k, c, id, ko, ja, p]) => (JA && ([ko, ja] = [ja, ko]), 0) || `<button class="row" role="listitem" data-go2="${id}"><span class="kind" style="--c:var(${c})">${k}</span><span class="dest"><b>${ko} ${JA ? "行き" : "行"}</b><small>${ja} ${JA ? "행" : "行き"}</small></span><span class="pl">${p}<small>番線</small></span></button>`).join("")}
+  <div class="ticker" aria-hidden="true"><span>${tr("곧 1번 승강장에 단어장행 열차가 들어옵니다 · まもなく 1番線に 各停 単語帳行きが まいります · 노란 선 안쪽에서 기다려 주세요", "まもなく 1番線に 各停 単語帳行きが まいります · 곧 1번 승강장에 열차가 들어옵니다 · 黄色い線の内側でお待ちください")}</span></div>
 </div>`);
 document.querySelectorAll("[data-go2]").forEach(b => b.onclick = () => goTab(b.dataset.go2));
 
@@ -1582,6 +1649,15 @@ renderHome = function () {
   const d = new Date(), n = (d.getFullYear() * 372 + d.getMonth() * 31 + d.getDate()) % W.length;
   const w = W[n], p = W[(n + W.length - 1) % W.length], q = W[(n + 1) % W.length];
   $("today").className = "eki";
+  if (JA) {
+    const [k, kt] = krOf(w), [pk] = krOf(p), [qk] = krOf(q);
+    $("today").innerHTML = `<div class="top2"><span class="no" style="--c:var(--L-list)"><i>T</i><b>${String(n + 1).padStart(2, "0")}</b></span>
+      <div class="nm"><div class="kn">${kt}</div><div class="kj kr" lang="ko">${k}</div><div class="ro">韓国語 · 한국어</div><span class="ko">${w[0]}（${w[1]}）</span></div>
+      <button class="say" data-say="${k}" data-lang="ko" aria-label="${k} を聞く">🔊</button></div>
+      <div class="band"><span>◀</span><span>▶</span></div>
+      <div class="pn"><span><b class="kr" lang="ko">${pk}</b><small>${p[0]}</small></span><span><b class="kr" lang="ko">${qk}</b><small>${q[0]}</small></span></div>`;
+    return;
+  }
   $("today").innerHTML = `<div class="top2"><span class="no" style="--c:var(--L-list)"><i>T</i><b>${String(n + 1).padStart(2, "0")}</b></span>
     <div class="nm"><div class="kn" lang="ja">${w[1]}</div><div class="kj" lang="ja">${w[0]}</div><div class="ro">${romaji(w[1])}</div><span class="ko">${w[2]}</span></div>
     <button class="say" data-say="${w[1]}" aria-label="읽기: ${w[1]}">🔊</button></div>
@@ -1595,6 +1671,45 @@ $("gExit").onclick = () => {
   else if (!$("rPlay").hidden) $("rQuit").click();
   else { clearInterval(C.clock); clearTimeout(C.hint); view("gSetup"); }
 };
+</script>
+<script>
+// ── 일본어 화면: 정적인 글자 바꾸기 + 언어 전환 버튼 + 처음 고르기 화면 ──
+if (JA) {
+  const D = {
+    "🔊 읽기 속도":"🔊 読み上げ速度","홈":"ホーム","단어장":"単語帳","카드":"カード","회화":"会話","듣기":"リスニング","기록":"記録","게임":"ゲーム",
+    "시작하기":"はじめる","단어장부터 차근차근 시작해요":"単語帳から少しずつ始めましょう","오늘의 단어":"今日の単語",
+    "외운 단어 숨기기":"覚えた単語をかくす","외운 단어 제외":"覚えた単語をのぞく","◀ 이전":"◀ 前へ","다음 ▶":"次へ ▶","🔀 섞기":"🔀 シャッフル",
+    "▶ 재생":"▶ 再生","⏪ 10초":"⏪ 10秒","10초 ⏩":"10秒 ⏩","🐢 속도":"🐢 速度","아래에서 에피소드를 고르세요":"下のエピソードを選んでください",
+    "원어민이 진행하는 학습자용 팟캐스트를 바로 틀어 줘요. 화면을 꺼도 계속 나오고, 들은 곳은 기억해 둬요.":"韓国語ネイティブの学習者向けポッドキャストをそのまま再生します。画面を消しても流れ続け、聞いたところを覚えておきます。",
+    "모든 에피소드는 각 팟캐스트의 공식 공개 피드에서 그대로 재생돼요. 저작권은 각 제작자에게 있어요. 대본·단어장은 제작자 페이지(🔗)에서 확인하고, 마음에 들면 제작자를 응원해 주세요.":"各エピソードは公式の公開フィードからそのまま再生しています。著作権は各制作者にあります。台本や単語リストは制作者のページ（🔗）で確認できます。",
+  };
+  const walk = root => {
+    const it = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    for (let n; (n = it.nextNode());) { const k = n.nodeValue.trim(); if (D[k]) n.nodeValue = n.nodeValue.replace(k, D[k]); }
+  };
+  ["header", "nav", "#home", "#list", "#flash", "#listen"].forEach(s => document.querySelectorAll(s).forEach(walk));
+  document.querySelectorAll('[aria-label="메뉴"]').forEach(e => e.setAttribute("aria-label", "メニュー"));
+  // 게임: 일본인용 버튼(🇯🇵)을 앞으로
+  document.querySelectorAll("#game .modes").forEach(m => [...m.children].filter(b => b.textContent.trim().startsWith("🇯🇵")).reverse().forEach(b => m.prepend(b)));
+}
+
+// 언어 전환 버튼 (머리 오른쪽)
+document.querySelector(".tools").insertAdjacentHTML("afterbegin",
+  `<button class="langsw" id="langSw" aria-label="${tr("日本語の画面に切り替え", "한국어 화면으로 바꾸기")}">${tr("🇯🇵 日本語", "🇰🇷 한국어")}</button>`);
+$("langSw").onclick = () => setLang(JA ? "ko" : "ja");
+
+// 처음 열었을 때: 어느 쪽인지 고르기
+if (!LANG_SAVED) {
+  document.body.insertAdjacentHTML("beforeend", `<div class="welcome" id="welcome" role="dialog" aria-modal="true" aria-labelledby="wT">
+    <div class="wbox">
+      <div class="wnx">次は · 다음은 · Next</div>
+      <h2 id="wT">어느 쪽이세요? · どちらですか？</h2>
+      <button class="wpick${JA ? "" : " rec"}" data-l="ko"><span class="fl">🇰🇷</span><span><b>일본어를 배워요</b><small>한국어 화면 · 일본어 단어와 한글 발음</small></span></button>
+      <button class="wpick${JA ? " rec" : ""}" data-l="ja"><span class="fl">🇯🇵</span><span><b>韓国語を学ぶ</b><small>日本語の画面 · ハングルとカタカナ読み</small></span></button>
+      <p class="wnote">나중에 위쪽 버튼으로 언제든 바꿀 수 있어요 · あとで上のボタンからいつでも切り替えられます</p>
+    </div></div>`);
+  document.querySelectorAll(".wpick").forEach(b => b.onclick = () => { setLang(b.dataset.l); $("welcome").remove(); });
+}
 </script>
 </body>
 </html>
