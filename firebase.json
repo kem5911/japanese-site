@@ -1,0 +1,11 @@
+{
+  "hosting": {
+    "site": "hanil-densha",
+    "public": ".",
+    "ignore": ["firebase.json", ".firebaserc", "**/.*", "**/node_modules/**", "community/**", "README*"],
+    "cleanUrls": false,
+    "headers": [
+      { "source": "**/*.@(html|js)", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] }
+    ]
+  }
+}

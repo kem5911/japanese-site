@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://kem5911.github.io/japanese-site/sitemap.xml
+Sitemap: https://hanil-densha.web.app/sitemap.xml
