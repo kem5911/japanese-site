@@ -496,7 +496,14 @@
 // 처음 열면 고르게 하고(폰 언어로 미리 추천), 고른 값은 이 기기에 기억해 둠.
 const LANG_KEY = "kj-lang";
 // 주소에 ?lang=ja 또는 ?lang=ko 를 붙이면 그 화면으로 바로 열림 (일본 친구에게 보낼 링크용)
-(() => { const q = new URLSearchParams(location.search).get("lang"); if (q === "ja" || q === "ko") try { localStorage.setItem("kj-lang", q); localStorage.setItem("jp-rec-lang", q); } catch {} })();
+// 한 번 적용한 뒤엔 주소에서 지워서, 위쪽 전환 버튼이 항상 이기게 함
+(() => {
+  const u = new URL(location.href), q = u.searchParams.get("lang");
+  if (q !== "ja" && q !== "ko") return;
+  try { localStorage.setItem("kj-lang", q); localStorage.setItem("jp-rec-lang", q); } catch {}
+  u.searchParams.delete("lang");
+  try { history.replaceState(null, "", u.pathname + u.search + u.hash); } catch {}
+})();
 const LANG_SAVED = (() => { try { const v = localStorage.getItem(LANG_KEY); return v === "ko" || v === "ja" ? v : null; } catch { return null; } })();
 const LANG = LANG_SAVED || (/^ja/i.test(navigator.language) ? "ja" : "ko");
 const JA = LANG === "ja";
@@ -504,7 +511,9 @@ const tr = (ko, ja) => JA ? ja : ko;
 document.documentElement.lang = LANG;
 function setLang(v) {
   try { localStorage.setItem(LANG_KEY, v); localStorage.setItem("jp-rec-lang", v); } catch {}
-  if (v !== LANG) location.reload();
+  if (v === LANG) return;
+  const u = new URL(location.href); u.searchParams.delete("lang");
+  location.replace(u.pathname + u.search + u.hash);
 }
 
 // 한글 → 가타카나 읽기 (日本人向けの目安。받침이 뒤로 넘어가는 소리(연음)는 반영하지 않음)
