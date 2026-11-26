@@ -11,7 +11,8 @@
   body { margin:0; font-family:system-ui,"Noto Sans KR","Noto Sans JP",sans-serif; background:var(--bg); color:var(--text); }
   header { padding:20px 16px 0; max-width:820px; margin:auto; }
   h1 { margin:0 0 12px; font-size:1.5rem; }
-  nav { display:flex; gap:8px; border-bottom:1px solid var(--line); }
+  nav { display:flex; gap:4px; border-bottom:1px solid var(--line); overflow-x:auto; }
+  nav button { white-space:nowrap; flex:none; }
   nav button { border:0; background:none; padding:10px 14px; font-size:1rem; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; }
   nav button[aria-selected="true"] { color:var(--accent); border-color:var(--accent); font-weight:600; }
   main { max-width:820px; margin:auto; padding:16px; }
@@ -33,6 +34,19 @@
   .phrase .ko { color:var(--muted); font-size:.95rem; }
   .say { border:0; background:none; cursor:pointer; font-size:1rem; padding:2px 4px; vertical-align:middle; }
   .rate { display:flex; align-items:center; gap:8px; margin:0 0 10px; color:var(--muted); }
+  .lis-now { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:24px 16px; text-align:center; min-height:190px; display:flex; flex-direction:column; justify-content:center; gap:10px; }
+  .lis-now .jp { font-size:2rem; }
+  .lis-now .ko { font-size:1.15rem; }
+  .lis-step { color:var(--muted); font-size:.9rem; }
+  .lis-big { font-size:1.2rem; padding:12px 28px !important; background:var(--accent) !important; color:#fff !important; border-color:var(--accent) !important; }
+  .lis-opts { display:grid; gap:10px; margin:14px 0; color:var(--muted); }
+  .lis-opts label { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .lis-opts select { font:inherit; padding:4px 6px; border-radius:6px; border:1px solid var(--line); background:var(--card); color:var(--text); }
+  .lis-list { margin-top:16px; }
+  .lis-list .phrase { cursor:pointer; }
+  .lis-list .phrase.on { border-color:var(--accent); }
+  .lis-credit { font-size:.8rem; color:var(--muted); margin-top:18px; line-height:1.6; }
+  .lis-credit a { color:inherit; }
 </style>
 </head>
 <body>
@@ -43,6 +57,7 @@
     <button role="tab" aria-selected="true" data-tab="list">단어장</button>
     <button role="tab" aria-selected="false" data-tab="flash">플래시카드</button>
     <button role="tab" aria-selected="false" data-tab="talk">실생활 회화</button>
+    <button role="tab" aria-selected="false" data-tab="listen">🎧 듣기 모드</button>
   </nav>
 </header>
 <main>
@@ -63,6 +78,29 @@
   </section>
 
   <section id="talk" hidden></section>
+
+  <section id="listen" hidden>
+    <p class="lis-step" style="margin-top:0">일본 사람이 직접 녹음한 목소리예요 (기계 음성 아님). 재생하고 화면을 꺼도 계속 들려요.</p>
+    <div class="lis-now" aria-live="polite">
+      <div class="lis-step" id="lisStep">▶ 를 누르면 시작해요</div>
+      <div class="jp" id="lisJp">本当？</div>
+      <div class="ko" id="lisKo">정말이야?</div>
+    </div>
+    <div class="controls">
+      <button id="lisPrev" aria-label="이전 문장">⏮</button>
+      <button id="lisPlay" class="lis-big">▶ 재생</button>
+      <button id="lisNext" aria-label="다음 문장">⏭</button>
+    </div>
+    <div class="lis-opts">
+      <label>🔁 한 문장 반복 <select id="lisRep"><option value="1">1번</option><option value="2" selected>2번</option><option value="3">3번</option></select></label>
+      <label>🗣 따라 말할 틈 <select id="lisGap"><option value="1">짧게 (1초)</option><option value="2.5" selected>보통 (2.5초)</option><option value="4">길게 (4초)</option></select></label>
+      <label>🐢 속도 <select id="lisSpd"><option value="0.75">0.75x</option><option value="0.9">0.9x</option><option value="1" selected>1x</option></select></label>
+      <label><input type="checkbox" id="lisShuf"> 🔀 순서 섞기</label>
+      <label><input type="checkbox" id="lisHide"> 🙈 뜻 가리기 (들리는 대로 맞혀 보기)</label>
+    </div>
+    <div class="lis-list" id="lisList"></div>
+    <div class="lis-credit">녹음: <a href="https://tatoeba.org" target="_blank" rel="noopener">Tatoeba</a> 기여자 yomi, lowteq, fal, CVjpn1, CVjpn29 · 문장 CC BY 2.0 FR · 녹음 라이선스는 기여자별로 다르며 각 문장의 Tatoeba 페이지에서 확인할 수 있어요. 한국어 뜻은 이 앱이 다듬었어요.</div>
+  </section>
 </main>
 
 <script>
@@ -169,6 +207,53 @@ const T = {
     ["ありがとうございました。失礼いたします。","감사합니다. 실례하겠습니다."],
   ],
 };
+
+// 듣기 모드: Tatoeba 원어민 녹음 [문장ID, 녹음자, 일본어, 한국어]
+const L = [
+  [4751,"yomi","本当？","정말이야?"],
+  [13193964,"fal","怖い。","무서워."],
+  [7551811,"lowteq","痛い。","아파."],
+  [2303034,"yomi","何の話？","무슨 얘기야?"],
+  [778974,"yomi","なんで？","왜?"],
+  [370955,"yomi","何これ？","이거 뭐야?"],
+  [236985,"CVjpn1","嘘だろ？","거짓말이지?"],
+  [142537,"yomi","静かに！","조용히 해!"],
+  [102315,"lowteq","彼は誰？","그 사람 누구야?"],
+  [5183,"lowteq","寒い。","추워."],
+  [4754,"yomi","急いで！","서둘러!"],
+  [10904986,"CVjpn1","すっげー！","대박!"],
+  [8533908,"CVjpn1","どうぞ。","여기요. / 드세요."],
+  [6865714,"CVjpn1","どうも。","고마워요. / 안녕하세요."],
+  [3710861,"yomi","あ、雪だ！","아, 눈이다!"],
+  [3590724,"yomi","頭痛い。","머리 아파."],
+  [3550819,"yomi","今の音何？","방금 무슨 소리야?"],
+  [3480386,"lowteq","教えて。","알려 줘."],
+  [2666712,"yomi","寝てるの？","자고 있어?"],
+  [2556043,"lowteq","やった。","해냈다! / 앗싸!"],
+  [1167794,"lowteq","見せて。","보여 줘."],
+  [509771,"CVjpn29","いいえ。","아니요."],
+  [145180,"yomi","新聞どこ？","신문 어딨어?"],
+  [4739,"lowteq","行くよ。","간다. / 가자."],
+  [13563757,"fal","立ち上がれ！","일어서!"],
+  [13549381,"fal","お疲れ様。","수고했어."],
+  [13536221,"fal","行く？","갈래?"],
+  [13536216,"fal","先生です。","선생님이에요."],
+  [13523695,"fal","電話して。","전화해 줘."],
+  [12296500,"fal","怖かった。","무서웠어."],
+  [10906691,"CVjpn1","今何してる？","지금 뭐 해?"],
+  [10906678,"CVjpn1","じゃあな。","잘 가. / 또 봐."],
+  [10906677,"CVjpn1","惜しいな。","아깝다."],
+  [10904979,"CVjpn1","バイバイ。","바이바이."],
+  [10901725,"CVjpn1","駄目です。","안 돼요."],
+  [5955911,"lowteq","わかった。","알았어."],
+  [3878008,"yomi","手伝おうか？","도와줄까?"],
+  [3700808,"yomi","これトムの？","이거 톰 거야?"],
+  [3595435,"yomi","どこ行くの？","어디 가?"],
+  [3552893,"yomi","何買ったの？","뭐 샀어?"],
+  [3552883,"yomi","何見てるの？","뭐 보고 있어?"],
+  [3488166,"lowteq","下がって。","물러서."],
+];
+const LIS_AUDIO = id => `https://audio.tatoeba.org/sentences/jpn/${id}.mp3`;
 console.assert(W.length === 50 && Object.values(T).every(t => t.length === 10), "데이터 개수 오류");
 
 // 외운 단어: 단어 문자열 목록을 브라우저에 저장
@@ -246,6 +331,84 @@ $("skipDone").onchange = () => { i = 0; flipped = false; renderCard(); };
 $("talk").innerHTML = Object.entries(T).map(([title, list]) =>
   `<h2>${title}</h2>` + list.map(([jp, ko]) => `<div class="phrase"><div>${jp}${say(jp)}</div><div class="ko">${ko}</div></div>`).join("")
 ).join("");
+
+// ── 듣기 모드 ──
+// 하나의 <audio> 요소로 "원어민 녹음 → 무음(따라 말할 틈) → 반복"을 이어서 틀어
+// 화면이 꺼져도 브라우저가 재생을 이어가게 함. 틈도 setTimeout 대신 무음 오디오로 채움.
+const lis = { el: new Audio(), order: L.map((_, n) => n), pos: 0, rep: 0, phase: "idle", playing: false };
+lis.el.preload = "auto";
+const silence = (() => { const cache = {}; return sec => {
+  if (cache[sec]) return cache[sec];
+  const rate = 8000, n = Math.round(rate * sec), buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+  const w = (o, str) => [...str].forEach((c, k) => v.setUint8(o + k, c.charCodeAt(0)));
+  w(0, "RIFF"); v.setUint32(4, 36 + n * 2, true); w(8, "WAVEfmt "); v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true);
+  v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, "data"); v.setUint32(40, n * 2, true);
+  return cache[sec] = URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
+}; })();
+const lisCur = () => L[lis.order[lis.pos]];
+function lisShow() {
+  const [id, , jp, ko] = lisCur(), hide = $("lisHide").checked;
+  $("lisJp").textContent = jp;
+  $("lisKo").textContent = hide && lis.phase !== "reveal" ? "（뜻은 마지막에 보여요）" : ko;
+  const reps = +$("lisRep").value;
+  $("lisStep").textContent = !lis.playing ? `⏸ ${lis.pos + 1} / ${L.length}`
+    : lis.phase === "gap" ? "🗣 따라 말해 보세요" : lis.phase === "reveal" ? "💡 뜻 확인" : `🎧 듣는 중 ${Math.min(lis.rep + 1, reps)}/${reps} · ${lis.pos + 1} / ${L.length}`;
+  $("lisPlay").textContent = lis.playing ? "⏸ 일시정지" : "▶ 재생";
+  document.querySelectorAll("#lisList .phrase").forEach(p => p.classList.toggle("on", +p.dataset.id === id));
+  if ("mediaSession" in navigator) {
+    navigator.mediaSession.metadata = new MediaMetadata({ title: jp, artist: hide && lis.phase !== "reveal" ? "듣기 모드" : ko, album: "🎧 일본어 듣기 모드" });
+    navigator.mediaSession.playbackState = lis.playing ? "playing" : "paused";
+  }
+}
+function lisLoad(src, isVoice) {
+  lis.el.src = src;
+  lis.el.playbackRate = isVoice ? +$("lisSpd").value : 1;
+  lis.el.play().catch(() => { lis.playing = false; lisShow(); });
+}
+function lisStep() {
+  if (!lis.playing) return;
+  const reps = +$("lisRep").value, gap = +$("lisGap").value;
+  if (lis.phase === "voice") { lis.phase = "gap"; lis.rep++; lisLoad(silence(gap), false); }
+  else if (lis.phase === "gap" && lis.rep < reps) { lis.phase = "voice"; lisLoad(LIS_AUDIO(lisCur()[0]), true); }
+  else if (lis.phase === "gap") { lis.phase = "reveal"; lisLoad(silence(1), false); }
+  else { lis.pos = (lis.pos + 1) % L.length; lisStart(); return; }
+  lisShow();
+}
+function lisStart() { lis.rep = 0; lis.phase = "voice"; lisLoad(LIS_AUDIO(lisCur()[0]), true); lisShow(); }
+lis.el.onended = lisStep;
+lis.el.onerror = () => { if (lis.playing && lis.phase === "voice") { lis.phase = "reveal"; lisStep(); } };
+function lisToggle(on = !lis.playing) {
+  lis.playing = on;
+  if (on) { lis.phase === "idle" || lis.el.ended || !lis.el.src ? lisStart() : lis.el.play().catch(() => {}); }
+  else lis.el.pause();
+  lisShow();
+}
+const lisJump = d => { lis.pos = (lis.pos + d + L.length) % L.length; if (lis.playing) lisStart(); else { lis.phase = "idle"; lisShow(); } };
+$("lisPlay").onclick = () => lisToggle();
+$("lisPrev").onclick = () => lisJump(-1);
+$("lisNext").onclick = () => lisJump(1);
+$("lisHide").onchange = lisShow;
+$("lisShuf").onchange = () => {
+  const cur = lis.order[lis.pos];
+  lis.order = L.map((_, n) => n);
+  if ($("lisShuf").checked) lis.order.sort(() => Math.random() - 0.5);
+  lis.pos = lis.order.indexOf(cur); lisShow();
+};
+$("lisList").innerHTML = L.map(([id, , jp, ko]) => `<div class="phrase" data-id="${id}"><div>${jp}</div><div class="ko">${ko}</div></div>`).join("");
+$("lisList").onclick = e => {
+  const p = e.target.closest(".phrase"); if (!p) return;
+  lis.pos = lis.order.indexOf(L.findIndex(x => x[0] === +p.dataset.id));
+  lis.playing = true; lisStart();
+};
+if ("mediaSession" in navigator) {
+  const ms = navigator.mediaSession;
+  ms.setActionHandler("play", () => lisToggle(true));
+  ms.setActionHandler("pause", () => lisToggle(false));
+  ms.setActionHandler("previoustrack", () => lisJump(-1));
+  ms.setActionHandler("nexttrack", () => lisJump(1));
+}
+lisShow();
 
 renderList();
 renderCard();
