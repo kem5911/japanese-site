@@ -1820,7 +1820,7 @@ if (!LANG_SAVED) {
 <script>
 // ── 伝言板(게시판): 피드백·질문·자유글. 글은 Firebase(Firestore 무료 요금제)에 저장. 규칙: community/firestore.rules ──
 // Firebase 콘솔 > 프로젝트 설정 > 내 앱(웹) 의 firebaseConfig 값. 공개돼도 되는 값이에요 (실제 보호는 보안 규칙이 함).
-const BBS_CFG = { apiKey: "", authDomain: "", projectId: "", appId: "" };
+const BBS_CFG = { apiKey: "AIzaSyD-vBMjGNhHYSZsZyxRlTlXZaazSoqJzRo", authDomain: "hanil-app.firebaseapp.com", projectId: "hanil-app", appId: "1:839137693619:web:e715796592e066f551c5c6" };
 (() => {
   const sec = $("bbs"), READY = !!(BBS_CFG.apiKey && BBS_CFG.projectId), PAGE = 30, V = "11.10.0";
   const ls = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch {} };
