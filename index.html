@@ -44,6 +44,15 @@
   .timer { height:6px; background:var(--line); border-radius:3px; overflow:hidden; margin-bottom:10px; }
   .timer div { height:100%; background:var(--accent); width:100%; }
   nav { overflow-x:auto; }
+  .join { display:flex; gap:8px; margin-top:8px; }
+  .join input { flex:1; min-width:0; padding:10px; font-size:1.1rem; border:1px solid var(--line); border-radius:8px; background:var(--card); color:var(--text); }
+  .join button, .emotes button { padding:10px 14px; border:1px solid var(--line); background:var(--card); color:var(--text); border-radius:8px; cursor:pointer; font:inherit; }
+  .ostatus { color:var(--accent); font-weight:600; text-align:center; min-height:1.2em; }
+  .ostatus button { margin:6px 0; padding:8px 12px; border:1px solid var(--line); background:var(--card); color:var(--text); border-radius:8px; font:inherit; cursor:pointer; }
+  .ostatus .code { font-size:2rem; letter-spacing:.2em; display:block; }
+  .emotes { display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-top:10px; }
+  .emotes button { font-size:.9rem; padding:6px 10px; }
+  .bubble { position:fixed; left:50%; top:16px; transform:translateX(-50%); background:var(--card); border:2px solid var(--accent); border-radius:16px; padding:12px 18px; font-size:1.2rem; text-align:center; box-shadow:0 6px 20px #0003; z-index:9; pointer-events:none; }
   nav button { white-space:nowrap; }
   .rate { display:flex; align-items:center; gap:8px; margin:0 0 10px; color:var(--muted); }
 </style>
@@ -87,6 +96,14 @@
         <button data-mode="ja"><b>🇯🇵 ひとりで</b><span>韓国語の単語 → 日本語の意味</span></button>
         <button data-mode="duel"><b>👥 둘이서 · ふたりで</b><span>한국인 vs 일본인, 번갈아 5문제씩<br>韓国人 vs 日本人、交代で5問ずつ</span></button>
       </div>
+      <h2>🌏 온라인 대결 · オンライン対戦</h2>
+      <p class="ex">한국인과 일본인이 각자 폰으로 같은 단어를 동시에 풀어요. 방을 만들고 코드를 친구에게 보내 주세요.<br>韓国人と日本人がそれぞれのスマホで同じ単語を同時に解きます。部屋を作ってコードを友達に送ってください。</p>
+      <div class="modes">
+        <button data-host="ko"><b>🇰🇷 방 만들기</b><span>나는 한국어 사용자</span></button>
+        <button data-host="ja"><b>🇯🇵 部屋を作る</b><span>私は日本語ユーザー</span></button>
+      </div>
+      <div class="join"><input id="oCode" inputmode="numeric" maxlength="4" placeholder="코드 · コード (4자리)"><button id="oJoin">참가 · 参加</button></div>
+      <p id="oStatus" class="ostatus" aria-live="polite"></p>
       <p class="ex" id="gBest"></p>
     </div>
     <div id="gPlay" hidden>
@@ -94,6 +111,8 @@
       <div class="timer"><div id="gTime"></div></div>
       <div class="flash q" id="gQ"></div>
       <div class="choices" id="gChoices"></div>
+      <p id="oOpp" class="ostatus" hidden></p>
+      <div class="emotes" id="oEmotes" hidden></div>
       <div class="controls"><button id="gNext" hidden>다음 ▶ 次へ</button><button id="gQuit">그만하기 · やめる</button></div>
     </div>
     <div id="gEnd" hidden>
@@ -299,20 +318,25 @@ const showBest = () => { const b = getBest(); $("gBest").textContent = `최고 �
 const pick = (arr, k) => [...arr].sort(() => Math.random() - 0.5).slice(0, k);
 const view = v => ["gSetup", "gPlay", "gEnd"].forEach(id => $(id).hidden = id !== v);
 
-function startGame(mode) {
+const makeQs = () => pick(W.map((_, i) => i), PER).map(w => ({ w, opts: pick([w, ...pick(W.map((_, i) => i).filter(i => i !== w), 3)], 4) }));
+function startGame(mode, qs = makeQs()) {
   G.mode = mode; G.n = 0; G.score = { ko: 0, ja: 0 };
-  const words = pick(W.map((_, i) => i), PER);
-  // 둘이서: 번갈아 출제 (ko, ja, ko, ja ...)
-  G.qs = words.map((w, k) => ({ w, side: mode === "duel" ? (k % 2 ? "ja" : "ko") : mode }));
+  // 둘이서: 번갈아 출제 (ko, ja, ko, ja ...) / 온라인: 내 언어 쪽 문제만
+  G.qs = qs.map((q, k) => ({ ...q, side: mode === "duel" ? (k % 2 ? "ja" : "ko") : mode === "online" ? ON.side : mode }));
+  $("oOpp").hidden = $("oEmotes").hidden = mode !== "online";
   view("gPlay"); ask();
+}
+function showScore(side) {
+  $("gScore").textContent = G.mode === "duel" || G.mode === "online" ? `🇰🇷 ${G.score.ko} : ${G.score.ja} 🇯🇵` : `점수 · 得点 ${G.score[side]}`;
 }
 function ask() {
   clearInterval(G.timer);
   const { w, side } = G.qs[G.n];
   const [jp, yomi, ko] = W[w];
-  const opts = pick([w, ...pick(W.map((_, i) => i).filter(i => i !== w), 3)], 4);
+  const opts = G.qs[G.n].opts;
+  if (G.mode === "online") onlineStatus();
   $("gTurn").textContent = (G.mode === "duel" ? (side === "ko" ? "🇰🇷 한국인 차례" : "🇯🇵 日本人の番") : "") + ` ${G.n + 1} / ${G.qs.length}`;
-  $("gScore").textContent = G.mode === "duel" ? `🇰🇷 ${G.score.ko} : ${G.score.ja} 🇯🇵` : `점수 · 得点 ${G.score[side]}`;
+  showScore(side);
   $("gQ").innerHTML = side === "ko"
     ? `<div class="jp">${jp}${say(jp)}</div><div class="ex" style="margin-top:12px">이 단어의 뜻은?</div>`
     : `<div class="jp">${ko}${say(ko, "ko")}</div><div class="ex" style="margin-top:12px">この韓国語の意味は？</div>`;
@@ -348,12 +372,19 @@ function answer(o, btn) {
     <div class="back"><span class="jp">${jp}</span>${say(jp)} <span class="yomi">${yomi}</span><br>
     🇰🇷 ${ko}${say(ko, "ko")}<br><span class="ex">${ex}</span>${say(ex)}</div>` +
     (HANJA[jp] ? `<div class="ex" style="margin-top:10px">💡 같은 한자어라 소리가 닮았어요 · 同じ漢字語で音が似ています<br><b>${jp.replace("する","")}</b> = ${HANJA[jp]} ≈ ${yomi.replace("する","")}${say(HANJA[jp], "ko")}</div>` : "");
-  $("gScore").textContent = G.mode === "duel" ? `🇰🇷 ${G.score.ko} : ${G.score.ja} 🇯🇵` : `점수 · 得点 ${G.score[side]}`;
+  showScore(side);
+  if (G.mode === "online") { ON.mine.add(G.n); send({ t: "a", n: G.n, score: G.score[side] }); onlineStatus(); return; }
   $("gNext").hidden = false;
   $("gNext").focus();
 }
 function endGame() {
   clearInterval(G.timer);
+  if (G.mode === "online") {
+    const me = ON.side, op = me === "ko" ? "ja" : "ko", s = G.score;
+    $("gResult").innerHTML = `<div style="font-size:2rem">${s[me] === s[op] ? "🤝 무승부 · 引き分け" : (s[me] > s[op]) === (me === "ko") ? "🇰🇷 한국인 승리!<br>韓国人の勝ち！" : "🇯🇵 日本人の勝ち！<br>일본인 승리!"}</div>
+      <div class="back">🇰🇷 ${s.ko} : ${s.ja} 🇯🇵</div><div class="ex" style="margin-top:12px">${s[me] >= s[op] ? "" : "다음엔 이길 거예요! · 次は勝てる！"}</div>`;
+    view("gEnd"); return;
+  }
   const b = getBest(), s = G.score;
   ["ko", "ja"].forEach(k => { if (s[k] > (b[k] || 0)) b[k] = s[k]; });
   try { localStorage.setItem(BEST, JSON.stringify(b)); } catch {}
@@ -362,11 +393,102 @@ function endGame() {
     : `<div style="font-size:2rem">🏁 ${s[G.mode]}점 · 点</div><div class="back">최고 점수 · ベスト ${b[G.mode]}</div>`;
   view("gEnd");
 }
-$("gNext").onclick = () => { G.n++; G.n < G.qs.length ? ask() : endGame(); };
-$("gQuit").onclick = () => { clearInterval(G.timer); showBest(); view("gSetup"); };
-$("gAgain").onclick = () => startGame(G.mode);
-$("gMenu").onclick = () => { showBest(); view("gSetup"); };
-document.querySelectorAll(".modes button").forEach(b => b.onclick = () => startGame(b.dataset.mode));
+const nextQ = () => { G.n++; G.n < G.qs.length ? ask() : endGame(); };
+$("gNext").onclick = () => {
+  if (G.mode === "online") send({ t: "next", n: G.n });
+  nextQ();
+};
+$("gQuit").onclick = () => { clearInterval(G.timer); if (G.mode === "online") hangUp(); showBest(); view("gSetup"); };
+$("gAgain").onclick = () => {
+  if (G.mode !== "online") return startGame(G.mode);
+  if (!ON.conn || !ON.conn.open) return oMsg("상대와 연결이 끊겼어요 · 相手との接続が切れました"), view("gSetup");
+  const qs = makeQs(); send({ t: "start", qs }); startGame("online", qs);
+};
+$("gMenu").onclick = () => { if (G.mode === "online") hangUp(); showBest(); view("gSetup"); };
+
+// 온라인 대결 (PeerJS: 브라우저끼리 직접 연결, 무료 공개 중계 서버로 처음 연결만 맺음)
+// 방 코드 4자리 → peer id "hanil-game-XXXX". 방장이 문제를 만들어 상대에게 보냄.
+const ON = { peer: null, conn: null, side: null, mine: new Set(), theirs: new Set() };
+const PREFIX = "hanil-game-";
+const oMsg = h => $("oStatus").innerHTML = h;
+const send = m => { try { ON.conn && ON.conn.open && ON.conn.send(m); } catch {} };
+function loadPeer() {
+  if (window.Peer) return Promise.resolve();
+  return new Promise((ok, ng) => {
+    const sc = document.createElement("script");
+    sc.src = "https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js";
+    sc.onload = ok; sc.onerror = () => ng(new Error("load"));
+    document.head.append(sc);
+  });
+}
+function hangUp() { try { ON.conn && ON.conn.close(); ON.peer && ON.peer.destroy(); } catch {} ON.conn = ON.peer = null; }
+function onlineStatus() {
+  const n = G.n, me = ON.mine.has(n), op = ON.theirs.has(n);
+  $("oOpp").hidden = false;
+  $("oOpp").textContent = op ? (me ? "" : "⚡ 상대가 먼저 답했어요! · 相手がもう答えました！") : me ? "⏳ 상대를 기다리는 중… · 相手を待っています…" : "";
+  $("gNext").hidden = !(me && op);
+}
+function bubble(text) {
+  const b = document.createElement("div"); b.className = "bubble"; b.textContent = text;
+  document.body.append(b); setTimeout(() => b.remove(), 2200);
+}
+// 상대 언어도 함께 보이는 짧은 리액션 (서로의 말을 자연스럽게 접하게)
+const EMOTES = ["👏 대박! · すごい！", "😂 ㅋㅋㅋ · www", "😭 아깝다 · 惜しい", "🔥 잘한다 · 上手！", "🙏 고마워 · ありがとう", "👋 안녕 · よろしく"];
+$("oEmotes").innerHTML = EMOTES.map(e => `<button>${e}</button>`).join("");
+$("oEmotes").onclick = e => { const b = e.target.closest("button"); if (b) { send({ t: "emote", e: b.textContent }); bubble("나 · 私: " + b.textContent); } };
+function wire(conn) {
+  ON.conn = conn;
+  conn.on("data", m => {
+    if (m.t === "hello") { ON.side = m.side === "ko" ? "ja" : "ko"; oMsg(ON.side === "ko" ? "연결됐어요! 상대는 🇯🇵 일본인이에요" : "接続しました！相手は🇰🇷韓国人です"); }
+    if (m.t === "start") { ON.mine.clear(); ON.theirs.clear(); startGame("online", m.qs); bubble("🎮 시작! · スタート！"); }
+    if (m.t === "a") { ON.theirs.add(m.n); G.score[ON.side === "ko" ? "ja" : "ko"] = m.score; showScore(); if (m.n === G.n) onlineStatus(); }
+    if (m.t === "next" && m.n === G.n && !$("gPlay").hidden) nextQ();
+    if (m.t === "emote") bubble("상대 · 相手: " + m.e);
+  });
+  conn.on("close", () => { if (ON.conn === conn) { bubble("연결 끊김 · 切断されました"); oMsg("상대와 연결이 끊겼어요 · 相手との接続が切れました"); } });
+}
+async function host(side) {
+  hangUp(); ON.side = side;
+  oMsg("준비 중… · 準備中…");
+  try { await loadPeer(); } catch { return oMsg("온라인 기능을 불러오지 못했어요 · 読み込めませんでした"); }
+  const code = String(Math.floor(1000 + Math.random() * 9000));
+  const peer = ON.peer = new Peer(PREFIX + code);
+  peer.on("open", () => { oMsg(`이 코드를 상대에게 보내 주세요 · このコードを送ってください<span class="code">${code}</span><button id="oShare">🔗 초대 링크 보내기 · 招待リンクを送る</button><br>⏳ 기다리는 중 · 待機中`); shareBtn(code); });
+  peer.on("error", e => e.type === "unavailable-id" ? host(side) : oMsg("연결 오류 · 接続エラー (" + e.type + ")"));
+  peer.on("connection", conn => {
+    if (ON.conn && ON.conn.open) return conn.close();  // 1:1만
+    wire(conn);
+    conn.on("open", () => {
+      send({ t: "hello", side });
+      ON.mine.clear(); ON.theirs.clear();
+      const qs = makeQs(); send({ t: "start", qs }); startGame("online", qs);
+      bubble(side === "ko" ? "🇯🇵 일본인 친구가 들어왔어요!" : "🇰🇷 韓国人の友達が来ました！");
+    });
+  });
+}
+function shareBtn(code) {
+  const url = location.origin + location.pathname + "?room=" + code;
+  const text = "한·일 단어 대결 하자! · 日韓単語バトルしよう！ " + url;
+  $("oShare").onclick = async () => {
+    try { if (navigator.share) return await navigator.share({ text }); await navigator.clipboard.writeText(text); bubble("링크 복사됨 · コピーしました"); }
+    catch { prompt("링크 · リンク", url); }
+  };
+}
+async function join() {
+  const code = $("oCode").value.trim();
+  if (!/^\d{4}$/.test(code)) return oMsg("4자리 숫자를 넣어 주세요 · 4桁の数字を入れてください");
+  hangUp(); oMsg("연결 중… · 接続中…");
+  try { await loadPeer(); } catch { return oMsg("온라인 기능을 불러오지 못했어요 · 読み込めませんでした"); }
+  const peer = ON.peer = new Peer();
+  peer.on("error", e => oMsg(e.type === "peer-unavailable" ? "방을 찾을 수 없어요 · 部屋が見つかりません" : "연결 오류 · 接続エラー (" + e.type + ")"));
+  peer.on("open", () => wire(peer.connect(PREFIX + code, { reliable: true })));
+}
+document.querySelectorAll("[data-host]").forEach(b => b.onclick = () => host(b.dataset.host));
+$("oJoin").onclick = join;
+// 초대 링크 (?room=1234) 로 들어오면 바로 게임 탭 + 코드 입력
+const room = new URLSearchParams(location.search).get("room");
+if (room) { $("oCode").value = room; document.querySelector('[data-tab=game]').click(); }
+document.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => startGame(b.dataset.mode));
 showBest();
 
 renderList();
