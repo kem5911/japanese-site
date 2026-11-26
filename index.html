@@ -501,7 +501,7 @@
       <label><input type="checkbox" id="lisHide"> 🙈 뜻 가리기 (들리는 대로 맞혀 보기)</label>
     </div>
     <div class="lis-list" id="lisList"></div>
-    <div class="lis-credit">녹음: <a href="https://tatoeba.org" target="_blank" rel="noopener">Tatoeba</a> 기여자 yomi, lowteq, fal, CVjpn1, CVjpn29 · 문장 CC BY 2.0 FR · 녹음 라이선스는 기여자별로 다르며 각 문장의 Tatoeba 페이지에서 확인할 수 있어요. 한국어 뜻은 이 앱이 다듬었어요.</div>
+    <div class="lis-credit">녹음: <a href="https://tatoeba.org" target="_blank" rel="noopener">Tatoeba</a> 기여자 yomi, fal · 문장 CC BY 2.0 FR · 녹음 라이선스는 기여자별로 다르며 각 문장의 Tatoeba 페이지에서 확인할 수 있어요. 한국어 뜻은 이 앱이 다듬었어요.</div>
     </div>
 
     <div id="lisPod" hidden>
@@ -1241,46 +1241,27 @@ const KO_W = [
 let L = [
   [4751,"yomi","本当？","정말이야?"],
   [13193964,"fal","怖い。","무서워."],
-  [7551811,"lowteq","痛い。","아파."],
   [2303034,"yomi","何の話？","무슨 얘기야?"],
   [778974,"yomi","なんで？","왜?"],
   [370955,"yomi","何これ？","이거 뭐야?"],
-  [236985,"CVjpn1","嘘だろ？","거짓말이지?"],
   [142537,"yomi","静かに！","조용히 해!"],
-  [102315,"lowteq","彼は誰？","그 사람 누구야?"],
-  [5183,"lowteq","寒い。","추워."],
   [4754,"yomi","急いで！","서둘러!"],
-  [10904986,"CVjpn1","すっげー！","대박!"],
-  [8533908,"CVjpn1","どうぞ。","여기요. / 드세요."],
-  [6865714,"CVjpn1","どうも。","고마워요. / 안녕하세요."],
   [3710861,"yomi","あ、雪だ！","아, 눈이다!"],
   [3590724,"yomi","頭痛い。","머리 아파."],
   [3550819,"yomi","今の音何？","방금 무슨 소리야?"],
-  [3480386,"lowteq","教えて。","알려 줘."],
   [2666712,"yomi","寝てるの？","자고 있어?"],
-  [2556043,"lowteq","やった。","해냈다! / 앗싸!"],
-  [1167794,"lowteq","見せて。","보여 줘."],
-  [509771,"CVjpn29","いいえ。","아니요."],
   [145180,"yomi","新聞どこ？","신문 어딨어?"],
-  [4739,"lowteq","行くよ。","간다. / 가자."],
   [13563757,"fal","立ち上がれ！","일어서!"],
   [13549381,"fal","お疲れ様。","수고했어."],
   [13536221,"fal","行く？","갈래?"],
   [13536216,"fal","先生です。","선생님이에요."],
   [13523695,"fal","電話して。","전화해 줘."],
   [12296500,"fal","怖かった。","무서웠어."],
-  [10906691,"CVjpn1","今何してる？","지금 뭐 해?"],
-  [10906678,"CVjpn1","じゃあな。","잘 가. / 또 봐."],
-  [10906677,"CVjpn1","惜しいな。","아깝다."],
-  [10904979,"CVjpn1","バイバイ。","바이바이."],
-  [10901725,"CVjpn1","駄目です。","안 돼요."],
-  [5955911,"lowteq","わかった。","알았어."],
   [3878008,"yomi","手伝おうか？","도와줄까?"],
   [3700808,"yomi","これトムの？","이거 톰 거야?"],
   [3595435,"yomi","どこ行くの？","어디 가?"],
   [3552893,"yomi","何買ったの？","뭐 샀어?"],
   [3552883,"yomi","何見てるの？","뭐 보고 있어?"],
-  [3488166,"lowteq","下がって。","물러서."],
 ];
 
 // 팟캐스트: 공식 RSS 피드의 공개 에피소드 [제목, 길이(초), 오디오, 페이지, 자막(VTT)]
@@ -1319,7 +1300,48 @@ const POD = [
   ]},
 ];
 if (JA) L = KO_L;
-const LIS_AUDIO = id => /^https?:/.test(id) ? id : `https://audio.tatoeba.org/sentences/jpn/${id}.mp3`;
+// Wikimedia 녹음은 Special:FilePath(리다이렉트, 요청 제한 있음) 대신 upload.wikimedia.org 직접 주소로 연결.
+// 직접 주소 = /x/xy/파일명, xy = 파일명 md5 앞 두 글자.
+function md5(str) {
+  const b = new TextEncoder().encode(str), n = ((b.length + 8 >> 6) + 1) * 16, w = new Array(n).fill(0);
+  for (let i = 0; i < b.length; i++) w[i >> 2] |= b[i] << (i % 4 * 8);
+  w[b.length >> 2] |= 0x80 << (b.length % 4 * 8); w[n - 2] = b.length * 8;
+  const S = [7,12,17,22,5,9,14,20,4,11,16,23,6,10,15,21], K = [];
+  for (let i = 0; i < 64; i++) K[i] = Math.floor(Math.abs(Math.sin(i + 1)) * 2 ** 32) | 0;
+  let a0 = 0x67452301, b0 = 0xefcdab89 | 0, c0 = 0x98badcfe | 0, d0 = 0x10325476;
+  for (let o = 0; o < n; o += 16) {
+    let A = a0, B = b0, C = c0, D = d0;
+    for (let i = 0; i < 64; i++) {
+      let F, g;
+      if (i < 16) { F = (B & C) | (~B & D); g = i; } else if (i < 32) { F = (D & B) | (~D & C); g = (5 * i + 1) % 16; }
+      else if (i < 48) { F = B ^ C ^ D; g = (3 * i + 5) % 16; } else { F = C ^ (B | ~D); g = (7 * i) % 16; }
+      const r = S[(i >> 4) * 4 + (i % 4)];
+      F = (F + A + K[i] + w[o + g]) | 0; A = D; D = C; C = B; B = (B + ((F << r) | (F >>> (32 - r)))) | 0;
+    }
+    a0 = (a0 + A) | 0; b0 = (b0 + B) | 0; c0 = (c0 + C) | 0; d0 = (d0 + D) | 0;
+  }
+  return [a0, b0, c0, d0].map(x => [0, 1, 2, 3].map(j => ((x >>> (j * 8)) & 255).toString(16).padStart(2, "0")).join("")).join("");
+}
+const FP = "https://commons.wikimedia.org/wiki/Special:FilePath/";
+const directAu = u => {
+  if (!u || !u.startsWith(FP)) return u;
+  const f = decodeURIComponent(u.slice(FP.length)).replace(/ /g, "_"), h = md5(f);
+  return `https://upload.wikimedia.org/wikipedia/commons/${h[0]}/${h.slice(0, 2)}/${encodeURIComponent(f)}`;
+};
+const LIS_AUDIO = id => /^https?:/.test(id) ? directAu(id) : `https://audio.tatoeba.org/sentences/jpn/${id}.mp3`;
+// 재생 실패 시: 잠깐 쉬고 한 번 더, 그래도 안 되면 원래(리다이렉트) 주소로
+function playWithRetry(el, url, onFail) {
+  const alt = url.includes("upload.wikimedia.org") ? FP + url.split("/").pop() : url;
+  let tries = 0;
+  el.onerror = () => {
+    tries++;
+    if (tries === 1) setTimeout(() => { el.src = url; el.play().catch(() => {}); }, 800);
+    else if (tries === 2 && alt !== url) { el.src = alt; el.play().catch(() => {}); }
+    else { el.onerror = null; onFail && onFail(); }
+  };
+  el.src = url;
+  return el.play();
+}
 console.assert(W.length === 50 && Object.values(T).every(t => t.length === 10), "데이터 개수 오류");
 
 // 외운 단어: 단어 문자열 목록을 브라우저에 저장
@@ -1371,7 +1393,7 @@ const deckName = () => deckSel.lv === "basic" ? tr("기본 50", "基本 50") : `
 const auUrl = (code, word) => {
   const s = window.VOCAB_SPK && VOCAB_SPK[VSIDE][code]; if (!s) return null;
   const q = VSIDE === "ja" ? "Q5287_(jpn)" : "Q9176_(kor)";
-  return "https://commons.wikimedia.org/wiki/Special:FilePath/" + encodeURIComponent(`LL-${q}-${s[0]}-${word}.wav`.replace(/ /g, "_"));
+  return directAu("https://commons.wikimedia.org/wiki/Special:FilePath/" + encodeURIComponent(`LL-${q}-${s[0]}-${word}.wav`.replace(/ /g, "_")));
 };
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 // 레벨 단어 → 화면용 모양 {key, head, read, mean, ex, note, au, tts}
@@ -1402,7 +1424,7 @@ document.addEventListener("click", e => {
   const b = e.target.closest("[data-au]");
   if (!b) return;
   e.preventDefault(); e.stopPropagation();
-  try { if (!auEl) auEl = new Audio(); auEl.pause(); auEl.src = b.dataset.au; auEl.play().catch(() => { const t = $("toast"); t.textContent = tr("소리를 불러오지 못했어요", "音声を読み込めませんでした"); t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2200); }); } catch {}
+  try { if (!auEl) auEl = new Audio(); auEl.pause(); playWithRetry(auEl, b.dataset.au, () => { const t = $("toast"); t.textContent = tr("소리를 불러오지 못했어요", "音声を読み込めませんでした"); t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2200); }).catch(e => { if (!e || e.name !== "NotAllowedError") return; const t = $("toast"); t.textContent = tr("소리를 불러오지 못했어요", "音声を読み込めませんでした"); t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2200); }); } catch {}
 }, true);
 
 function pickHtml() {
@@ -1546,9 +1568,14 @@ function lisShow() {
   }
 }
 function lisLoad(src, isVoice) {
-  lis.el.src = src;
+  const skip = () => { if (lis.playing && lis.phase === "voice") { lis.phase = "reveal"; lisStep(); } };
+  let p;
+  if (isVoice) p = playWithRetry(lis.el, src, skip); else { lis.el.onerror = null; lis.el.src = src; p = lis.el.play(); }
   lis.el.playbackRate = isVoice ? +$("lisSpd").value : 1;
-  lis.el.play().catch(() => { lis.playing = false; lisShow(); });
+  lis.el.onloadedmetadata = () => { lis.el.playbackRate = isVoice ? +$("lisSpd").value : 1; };
+  // 자동재생 차단일 때만 멈춤. 불러오기 실패는 위에서 다시 시도/건너뛰기
+  p.catch(e => { if (e && e.name === "NotAllowedError") { lis.playing = false; lisShow(); } });
+  lisPrefetch();
 }
 function lisStep() {
   if (!lis.playing) return;
@@ -1561,7 +1588,13 @@ function lisStep() {
 }
 function lisStart() { lis.rep = 0; lis.phase = "voice"; lisLoad(LIS_AUDIO(lisCur()[0]), true); lisShow(); }
 lis.el.onended = lisStep;
-lis.el.onerror = () => { if (lis.playing && lis.phase === "voice") { lis.phase = "reveal"; lisStep(); } };
+// 다음 문장 녹음을 미리 받아 두어 끊김 줄이기
+const lisPre = new Audio(); lisPre.preload = "auto"; lisPre.muted = true;
+function lisPrefetch() {
+  const nx = L[lis.order[(lis.pos + 1) % L.length]];
+  const u = nx && LIS_AUDIO(nx[0]);
+  if (u && lisPre.src !== u) { lisPre.src = u; lisPre.load(); }
+}
 function lisToggle(on = !lis.playing) {
   lis.playing = on;
   if (on) { lis.phase === "idle" || lis.el.ended || !lis.el.src ? lisStart() : lis.el.play().catch(() => {}); }
