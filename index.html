@@ -2015,22 +2015,49 @@ $("gAgain").onclick = () => {
 };
 $("gMenu").onclick = () => { if (G.mode === "online") hangUp(); showBest(); view("gSetup"); };
 
-// 온라인 대결 (PeerJS: 브라우저끼리 직접 연결, 무료 공개 중계 서버로 처음 연결만 맺음)
-// 방 코드 4자리 → peer id "hanil-game-XXXX". 방장이 문제를 만들어 상대에게 보냄.
-const ON = { peer: null, conn: null, side: null, mine: new Set(), theirs: new Set() };
-const PREFIX = "hanil-game-";
+// 온라인 대결 (Firebase 실시간 데이터베이스 hanil-app 로 중계)
+// 방 코드 4자리 → duel/코드 {h: 방장, g: 손님, m: 주고받는 메시지}. 방장이 문제를 만들어 상대에게 보냄.
+// 예전엔 폰끼리 직접 연결(PeerJS)했는데, 통신사 망·공개 서버 문제로 자주 안 붙어서 바꿈. 규칙: community/database.rules.json
+const ON = { conn: null, side: null, mine: new Set(), theirs: new Set(), room: null };
+const DUEL_CFG = { apiKey: "AIzaSyD-vBMjGNhHYSZsZyxRlTlXZaazSoqJzRo", authDomain: "hanil-app.firebaseapp.com", projectId: "hanil-app", appId: "1:839137693619:web:e715796592e066f551c5c6", databaseURL: "https://hanil-app-default-rtdb.asia-southeast1.firebasedatabase.app" };
 const oMsg = h => $("oStatus").innerHTML = h;
 const send = m => { try { ON.conn && ON.conn.open && ON.conn.send(m); } catch {} };
-function loadPeer() {
-  if (window.Peer) return Promise.resolve();
-  return new Promise((ok, ng) => {
-    const sc = document.createElement("script");
-    sc.src = "https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js";
-    sc.onload = ok; sc.onerror = () => ng(new Error("load"));
-    document.head.append(sc);
-  });
+let DUEL;
+const duelDB = () => DUEL || (DUEL = (async () => {
+  const base = "https://www.gstatic.com/firebasejs/11.10.0/";
+  const [{ initializeApp }, A, D] = await Promise.all(["firebase-app", "firebase-auth", "firebase-database"].map(m => import(base + m + ".js")));
+  const emu = (location.protocol === "file:" || /^(localhost|127\.)/.test(location.hostname)) && new URLSearchParams(location.search).get("emu");
+  const app = initializeApp(emu ? { ...DUEL_CFG, databaseURL: `http://${emu}:9000?ns=demo-hanil-default-rtdb` } : DUEL_CFG, "duel");
+  const auth = A.getAuth(app), db = D.getDatabase(app);
+  if (emu) { A.connectAuthEmulator(auth, `http://${emu}:9099`, { disableWarnings: true }); D.connectDatabaseEmulator(db, emu, 9000); }
+  const u = auth.currentUser || (await new Promise(r => { const off = A.onAuthStateChanged(auth, x => { off(); r(x); }); })) || (await A.signInAnonymously(auth)).user;
+  return { ...D, db, uid: u.uid, R: p => D.ref(db, p) };
+})().catch(e => { DUEL = null; throw e; }));
+// 방 하나에 대한 연결 (PeerJS 의 conn 과 같은 모양: open / send / on("data"|"close"|"open") / close)
+function duelConn(F, code, other) {
+  const ev = { data: [], close: [], open: [] }, offs = [];
+  const conn = { open: false, on: (k, f) => (ev[k].push(f), conn), send: m => F.push(F.R(`duel/${code}/m`), { f: F.uid, d: JSON.stringify(m), t: F.serverTimestamp() }).catch(() => {}),
+    close() { conn.open = false; offs.splice(0).forEach(f => f()); } };
+  // 들어오기 전에 쌓여 있던 메시지는 건너뜀
+  const old = new Set(), ready = F.get(F.R(`duel/${code}/m`)).then(s => s.forEach(c => { old.add(c.key); })).catch(() => {});
+  offs.push(F.onChildAdded(F.R(`duel/${code}/m`), async s => {
+    await ready;
+    const v = s.val(); if (!v || v.f === F.uid || old.has(s.key)) return;
+    try { const m = JSON.parse(v.d); ev.data.forEach(f => f(m)); } catch {}
+  }));
+  conn.ready = ready;
+  let seen = false;
+  offs.push(F.onValue(F.R(`duel/${code}/${other}`), s => {
+    if (s.exists()) { if (!seen) { seen = true; conn.open = true; ev.open.forEach(f => f()); } }
+    else if (seen) { seen = false; const was = conn.open; conn.open = false; if (was) ev.close.forEach(f => f()); }
+  }));
+  return conn;
 }
-function hangUp() { try { ON.conn && ON.conn.close(); ON.peer && ON.peer.destroy(); } catch {} ON.conn = ON.peer = null; }
+function hangUp() {
+  try { ON.conn && ON.conn.close(); } catch {}
+  const r = ON.room; ON.conn = ON.room = null;
+  if (r && DUEL) DUEL.then(F => F.remove(F.R(`duel/${r.code}${r.host ? "" : "/g"}`))).catch(() => {});
+}
 function onlineStatus() {
   const n = G.n, me = ON.mine.has(n), op = ON.theirs.has(n);
   $("oOpp").hidden = false;
@@ -2059,21 +2086,32 @@ function wire(conn) {
 async function host(side) {
   hangUp(); ON.side = side;
   oMsg("준비 중… · 準備中…");
-  try { await loadPeer(); } catch { return oMsg("온라인 기능을 불러오지 못했어요 · 読み込めませんでした"); }
-  const code = String(Math.floor(1000 + Math.random() * 9000));
-  const peer = ON.peer = new Peer(PREFIX + code);
-  peer.on("open", () => { oMsg(`이 코드를 상대에게 보내 주세요 · このコードを送ってください<span class="code">${code}</span><button id="oShare">🔗 초대 링크 보내기 · 招待リンクを送る</button><br>⏳ 기다리는 중 · 待機中`); shareBtn(code); });
-  peer.on("error", e => e.type === "unavailable-id" ? host(side) : oMsg("연결 오류 · 接続エラー (" + e.type + ")"));
-  peer.on("connection", conn => {
-    if (ON.conn && ON.conn.open) return conn.close();  // 1:1만
-    wire(conn);
-    conn.on("open", () => {
-      send({ t: "hello", side });
-      ON.mine.clear(); ON.theirs.clear();
-      const qs = makeQs(); send({ t: "start", qs }); startGame("online", qs);
-      bubble(side === "ko" ? "🇯🇵 일본인 친구가 들어왔어요!" : "🇰🇷 韓国人の友達が来ました！");
-    });
+  let F; try { F = await duelDB(); } catch { return oMsg("온라인 기능을 불러오지 못했어요 · 読み込めませんでした"); }
+  let code = null;
+  for (let i = 0; i < 6 && !code; i++) {
+    const c = String(Math.floor(1000 + Math.random() * 9000));
+    try {
+      const h = await F.get(F.R(`duel/${c}/h`));
+      if (h.exists() && h.val().u !== F.uid) continue;
+      await F.set(F.R(`duel/${c}/h`), { u: F.uid, l: side, t: F.serverTimestamp() });
+      code = c;
+    } catch (e) { console.warn("duel host", e); }
+  }
+  if (!code) return oMsg("연결 오류 · 接続エラー (room)");
+  await F.onDisconnect(F.R(`duel/${code}`)).remove().catch(() => {});
+  await Promise.all([F.remove(F.R(`duel/${code}/g`)), F.remove(F.R(`duel/${code}/m`))]).catch(() => {});
+  ON.room = { code, host: true };
+  oMsg(`이 코드를 상대에게 보내 주세요 · このコードを送ってください<span class="code">${code}</span><button id="oShare">🔗 초대 링크 보내기 · 招待リンクを送る</button><br>⏳ 기다리는 중 · 待機中`); shareBtn(code);;
+  const conn = duelConn(F, code, "g");
+  wire(conn);
+  conn.on("open", () => {
+    if (ON.conn !== conn) return;
+    send({ t: "hello", side });
+    ON.mine.clear(); ON.theirs.clear();
+    const qs = makeQs(); send({ t: "start", qs }); startGame("online", qs);
+    bubble(side === "ko" ? "🇯🇵 일본인 친구가 들어왔어요!" : "🇰🇷 韓国人の友達が来ました！");
   });
+  // 상대가 나가면 방을 다시 열어 둠 (다음 사람이 같은 코드로 들어올 수 있게)
 }
 function shareBtn(code) {
   const url = location.origin + location.pathname + "?room=" + code;
@@ -2087,10 +2125,19 @@ async function join() {
   const code = $("oCode").value.trim();
   if (!/^\d{4}$/.test(code)) return oMsg("4자리 숫자를 넣어 주세요 · 4桁の数字を入れてください");
   hangUp(); oMsg("연결 중… · 接続中…");
-  try { await loadPeer(); } catch { return oMsg("온라인 기능을 불러오지 못했어요 · 読み込めませんでした"); }
-  const peer = ON.peer = new Peer();
-  peer.on("error", e => oMsg(e.type === "peer-unavailable" ? "방을 찾을 수 없어요 · 部屋が見つかりません" : "연결 오류 · 接続エラー (" + e.type + ")"));
-  peer.on("open", () => wire(peer.connect(PREFIX + code, { reliable: true })));
+  let F; try { F = await duelDB(); } catch { return oMsg("온라인 기능을 불러오지 못했어요 · 読み込めませんでした"); }
+  try {
+    const r = await F.get(F.R(`duel/${code}`)), v = r.val();
+    if (!v || !v.h) return oMsg("방을 찾을 수 없어요 · 部屋が見つかりません");
+    if (v.g && v.g.u !== F.uid) return oMsg("이미 다른 사람이 들어갔어요 · もう他の人が入っています");
+    if (v.h.u === F.uid) return oMsg("내가 만든 방이에요. 다른 폰에서 들어와 주세요 · 自分の部屋です。別の端末から入ってね");
+    ON.room = { code, host: false };
+    const conn = duelConn(F, code, "h");
+    wire(conn);
+    await conn.ready;
+    await F.onDisconnect(F.R(`duel/${code}/g`)).remove();
+    await F.set(F.R(`duel/${code}/g`), { u: F.uid, t: F.serverTimestamp() });
+  } catch (e) { console.warn("duel join", e); oMsg("연결 오류 · 接続エラー"); }
 }
 document.querySelectorAll("[data-host]").forEach(b => b.onclick = () => host(b.dataset.host));
 $("oJoin").onclick = join;
