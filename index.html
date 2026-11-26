@@ -495,6 +495,8 @@
 // ── 언어 ── "ko": 한국인이 일본어를 배우는 화면 / "ja": 日本人が韓国語を学ぶ画面
 // 처음 열면 고르게 하고(폰 언어로 미리 추천), 고른 값은 이 기기에 기억해 둠.
 const LANG_KEY = "kj-lang";
+// 주소에 ?lang=ja 또는 ?lang=ko 를 붙이면 그 화면으로 바로 열림 (일본 친구에게 보낼 링크용)
+(() => { const q = new URLSearchParams(location.search).get("lang"); if (q === "ja" || q === "ko") try { localStorage.setItem("kj-lang", q); localStorage.setItem("jp-rec-lang", q); } catch {} })();
 const LANG_SAVED = (() => { try { const v = localStorage.getItem(LANG_KEY); return v === "ko" || v === "ja" ? v : null; } catch { return null; } })();
 const LANG = LANG_SAVED || (/^ja/i.test(navigator.language) ? "ja" : "ko");
 const JA = LANG === "ja";
