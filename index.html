@@ -44,6 +44,7 @@
   .timer { height:6px; background:var(--line); border-radius:3px; overflow:hidden; margin-bottom:10px; }
   .timer div { height:100%; background:var(--accent); width:100%; }
   nav { overflow-x:auto; }
+  #rCv { display:block; width:100%; height:min(68vh,560px); border-radius:14px; background:var(--card); border:1px solid var(--line); touch-action:none; }
   .choices.emoji button { font-size:2.6rem; min-height:90px; }
   .big { font-size:2.6rem; font-weight:700; }
   .hint { margin-top:14px; font-size:1.3rem; color:var(--accent); min-height:1.6em; }
@@ -92,6 +93,15 @@
 
   <section id="game" hidden>
     <div id="gSetup">
+      <h2>🏃 갈림길 러너 · 分かれ道ランナー</h2>
+      <p class="ex">맞는 뜻의 문으로 달려가면 친구들이 늘어나요! 틀리면 줄어들어요. 좌우로 밀거나 ←→ 키.<br>正しい意味のゲートを通ると仲間が増える！間違えると減るよ。左右にスワイプか←→キー。</p>
+      <div class="modes">
+        <button data-run="ko.easy"><b>🇰🇷 쉬움 · 그림</b><span>일본어 몰라도 OK</span></button>
+        <button data-run="ko.normal"><b>🇰🇷 보통 · 단어</b><span>JLPT 단어 뜻 고르기</span></button>
+        <button data-run="ja.easy"><b>🇯🇵 かんたん・絵</b><span>韓国語を知らなくてもOK</span></button>
+        <button data-run="ja.normal"><b>🇯🇵 ふつう・単語</b><span>韓国語の意味を選ぶ</span></button>
+      </div>
+      <p class="ex" id="rBest"></p>
       <h2>🎯 친구랑 내기 · 友達と勝負</h2>
       <p class="ex">일본어를 하나도 몰라도 OK! 소리를 듣고 그림을 골라요. 기록을 친구에게 보내 내기해 보세요.<br>韓国語をまったく知らなくてもOK！音を聞いて絵を選ぼう。記録を友達に送って勝負！</p>
       <div id="cInvite" class="ostatus" hidden></div>
@@ -124,6 +134,16 @@
       <p id="oOpp" class="ostatus" hidden></p>
       <div class="emotes" id="oEmotes" hidden></div>
       <div class="controls"><button id="gNext" hidden>다음 ▶ 次へ</button><button id="gQuit">그만하기 · やめる</button></div>
+    </div>
+    <div id="rPlay" hidden>
+      <canvas id="rCv" aria-label="러너 게임 · ランナーゲーム"></canvas>
+      <div class="controls"><button id="rQuit">그만하기 · やめる</button></div>
+    </div>
+    <div id="rEnd" hidden>
+      <div class="flash" id="rResult"></div>
+      <div class="controls"><button id="rAgain">🔁 다시 · もう一度</button><button id="rMenu">메뉴 · メニュー</button></div>
+      <h2 id="rLearnedT"></h2>
+      <div id="rLearned"></div>
     </div>
     <div id="cPlay" hidden>
       <div class="bar"><span id="cPos"></span><span id="cClock">0.0초</span></div>
@@ -352,7 +372,7 @@ const BEST = "jp-game-best";
 const getBest = () => { try { return JSON.parse(localStorage.getItem(BEST)) || {}; } catch { return {}; } };
 const showBest = () => { const b = getBest(); $("gBest").textContent = `최고 점수 · ベスト: 🇰🇷 ${b.ko || 0} / 🇯🇵 ${b.ja || 0}`; };
 const pick = (arr, k) => [...arr].sort(() => Math.random() - 0.5).slice(0, k);
-const view = v => ["gSetup", "gPlay", "gEnd", "cPlay", "cEnd"].forEach(id => $(id).hidden = id !== v);
+const view = v => ["gSetup", "gPlay", "gEnd", "cPlay", "cEnd", "rPlay", "rEnd"].forEach(id => $(id).hidden = id !== v);
 
 const makeQs = () => pick(W.map((_, i) => i), PER).map(w => ({ w, opts: pick([w, ...pick(W.map((_, i) => i).filter(i => i !== w), 3)], 4) }));
 function startGame(mode, qs = makeQs()) {
@@ -616,6 +636,131 @@ if (ch) {
     $("cAccept").onclick = () => chStart(lang, +seed, { right: +right, sec });
   }
 }
+// 갈림길 러너: 위에서 내려오는 두 문 중 맞는 뜻 쪽으로 무리를 옮기면 인원이 늘어남
+const R = { on: false };
+const RGATES = 15;
+const rBestGet = () => { try { return JSON.parse(localStorage.getItem("jp-run-best")) || {}; } catch { return {}; } };
+const rShowBest = () => { const b = rBestGet(); $("rBest").textContent = `최고 기록 · ベスト: 🇰🇷 ${Math.max(b["ko.easy"] || 0, b["ko.normal"] || 0)}명 / 🇯🇵 ${Math.max(b["ja.easy"] || 0, b["ja.normal"] || 0)}人`; };
+// 문제 1개: { q: 문제 글자, read: 발음 힌트, tl: 읽기 언어, opts: [왼쪽, 오른쪽] 표시 글자, ok: 정답 쪽(0/1), learn: 정답 설명 }
+function rMakeQ() {
+  const [lang, diff] = R.key.split("."), ko = lang === "ko", r = Math.random;
+  if (diff === "easy") {
+    const w = Math.floor(r() * EZ.length); let o; do o = Math.floor(r() * EZ.length); while (o === w);
+    const e = EZ[w], ok = r() < .5 ? 0 : 1, opts = ok ? [EZ[o][0], e[0]] : [e[0], EZ[o][0]];
+    return { q: ko ? e[1] : e[3], read: ko ? e[2] : e[4], tl: ko ? "ja" : "ko", opts, ok, emoji: true,
+      learn: `${e[0]} ${e[1]}${e[5] ? ` (${e[5]})` : ""} · ${e[3]}`, sayT: ko ? e[1] : e[3] };
+  }
+  const w = Math.floor(r() * W.length); let o; do o = Math.floor(r() * W.length); while (o === w);
+  const label = i => ko ? W[i][2].split(",")[0] : W[i][0];
+  const ok = r() < .5 ? 0 : 1, opts = ok ? [label(o), label(w)] : [label(w), label(o)];
+  const [jp, yomi, kom] = W[w];
+  return { q: ko ? jp : KR[jp][0], read: ko ? yomi : KR[jp][1], tl: ko ? "ja" : "ko", opts, ok,
+    learn: `${jp} (${yomi}) · ${KR[jp][0]} (${KR[jp][1]})${kom === KR[jp][0] ? "" : " · " + kom}`, sayT: ko ? jp : KR[jp][0] };
+}
+function rStart(key) {
+  Object.assign(R, { key, on: true, crowd: 5, x: .5, tx: .5, gate: null, n: 0, log: [], fx: [], scroll: 0, last: performance.now(), wait: .6 });
+  view("rPlay"); rResize(); requestAnimationFrame(rLoop);
+}
+function rResize() { const c = $("rCv"), d = devicePixelRatio || 1; c.width = c.clientWidth * d; c.height = c.clientHeight * d; }
+addEventListener("resize", () => R.on && rResize());
+function rSpawn() {
+  const q = rMakeQ();
+  // 점점 빨라짐: 5초 → 2.8초 동안 내려옴
+  R.gate = { ...q, y: 0, dur: Math.max(2.8, 5 - R.n * .15), t0: performance.now() };
+  if ("speechSynthesis" in window) speak(q.sayT, q.tl);
+}
+function rPass() {
+  const g = R.gate, side = R.x < .5 ? 0 : 1, right = side === g.ok;
+  const before = R.crowd;
+  // 20명 전까지는 +5~10, 그 뒤로는 ×1.5 (최대 999)
+  if (right) R.crowd = R.crowd < 20 ? R.crowd + 5 + Math.floor(Math.random() * 6) : Math.min(999, Math.round(R.crowd * 1.5));
+  else R.crowd = Math.max(0, R.crowd - Math.max(3, Math.ceil(R.crowd * .4)));
+  const d = R.crowd - before;
+  R.fx.push({ text: right ? (before >= 20 ? "×1.5" : "+" + d) : String(d), good: right, t: performance.now() });
+  R.log.push({ learn: g.learn, ok: right, sayT: g.sayT, tl: g.tl });
+  R.gate = null; R.n++; R.wait = .7;
+  if (R.crowd <= 0 || R.n >= RGATES) setTimeout(rEnd, 500);
+}
+function rLoop(now) {
+  if (!R.on) return;
+  const dt = Math.min(.05, (now - R.last) / 1000); R.last = now;
+  R.x += (R.tx - R.x) * Math.min(1, dt * 12);
+  R.scroll = (R.scroll + dt * 220) % 80;
+  if (!R.gate && R.n < RGATES && R.crowd > 0) { R.wait -= dt; if (R.wait <= 0) rSpawn(); }
+  if (R.gate) { R.gate.y = (now - R.gate.t0) / 1000 / R.gate.dur; if (R.gate.y >= 1) rPass(); }
+  rDraw(now);
+  requestAnimationFrame(rLoop);
+}
+function rDraw(now) {
+  const c = $("rCv"), x = c.getContext("2d"), d = devicePixelRatio || 1, Wd = c.width / d, H = c.height / d;
+  const css = getComputedStyle(document.documentElement), col = n => css.getPropertyValue(n).trim();
+  x.setTransform(d, 0, 0, d, 0, 0);
+  x.fillStyle = col("--card"); x.fillRect(0, 0, Wd, H);
+  // 길 가운데 점선
+  x.strokeStyle = col("--line"); x.lineWidth = 4; x.setLineDash([40, 40]); x.lineDashOffset = -R.scroll;
+  x.beginPath(); x.moveTo(Wd / 2, 0); x.lineTo(Wd / 2, H); x.stroke(); x.setLineDash([]);
+  const top = 70, py = H - 70;  // 문이 지나가는 구간: top → py
+  x.textAlign = "center"; x.textBaseline = "middle"; x.fillStyle = col("--text");
+  // 상단: 문제
+  const g = R.gate;
+  x.font = "600 15px system-ui,sans-serif"; x.fillStyle = col("--muted");
+  x.fillText(`${Math.min(R.n + 1, RGATES)} / ${RGATES}`, 34, 18);
+  if (g) {
+    x.fillStyle = col("--text"); x.font = "700 30px system-ui,sans-serif"; x.fillText(g.q, Wd / 2, 28);
+    // 절반쯤 내려오면 발음 힌트
+    if (g.y > .45) { x.fillStyle = col("--accent"); x.font = "600 16px system-ui,sans-serif"; x.fillText("💡 " + g.read, Wd / 2, 56); }
+    const gy = top + (py - 40 - top) * g.y, gh = 56;
+    [0, 1].forEach(s => {
+      const gx = s ? Wd / 2 + 6 : 6, gw = Wd / 2 - 12;
+      x.fillStyle = s ? "#4a8fe7cc" : "#e0a03acc";
+      x.beginPath(); x.roundRect(gx, gy, gw, gh, 10); x.fill();
+      x.fillStyle = "#fff"; x.font = g.emoji ? "34px system-ui,sans-serif" : "700 18px system-ui,sans-serif";
+      let t = g.opts[s]; while (!g.emoji && x.measureText(t).width > gw - 12 && t.length > 2) t = t.slice(0, -2) + "…";
+      x.fillText(t, gx + gw / 2, gy + gh / 2 + 1);
+    });
+  }
+  // 무리 (사람 수만큼 점, 많으면 일부만 그림)
+  const cx = 12 + R.x * (Wd - 24), shown = Math.min(R.crowd, 80);
+  for (let i = 0; i < shown; i++) {
+    const a = i * 2.4, rr = 7 * Math.sqrt(i);
+    const bob = Math.sin(now / 90 + i) * 1.5;
+    x.fillStyle = i % 2 ? col("--accent") : "#4a8fe7";
+    x.beginPath(); x.arc(cx + Math.cos(a) * rr, py + Math.sin(a) * rr * .5 + bob, 7, 0, 7); x.fill();
+  }
+  x.fillStyle = col("--text"); x.font = "700 18px system-ui,sans-serif";
+  x.fillText(`🏃 ${R.crowd}`, Math.min(Wd - 40, Math.max(40, cx)), py - 34 - Math.min(30, Math.sqrt(shown) * 2));
+  // 효과 글자
+  R.fx = R.fx.filter(f => now - f.t < 900);
+  R.fx.forEach(f => { const k = (now - f.t) / 900; x.globalAlpha = 1 - k; x.fillStyle = f.good ? "#2f9e55" : col("--accent");
+    x.font = "800 34px system-ui,sans-serif"; x.fillText(f.text, Math.min(Wd - 40, Math.max(40, cx)), py - 70 - k * 40); x.globalAlpha = 1; });
+}
+function rEnd() {
+  if (!R.on) return;
+  R.on = false;
+  const ko = R.key.startsWith("ko"), b = rBestGet(), right = R.log.filter(l => l.ok).length;
+  const nb = R.crowd > (b[R.key] || 0); if (nb) { b[R.key] = R.crowd; try { localStorage.setItem("jp-run-best", JSON.stringify(b)); } catch {} }
+  $("rResult").innerHTML = R.crowd <= 0
+    ? `<div style="font-size:2rem">😵 ${ko ? "모두 흩어졌어요!" : "みんな散らばった！"}</div><div class="back">${ko ? `${R.n}번째 문에서 끝` : `${R.n}個目のゲートで終了`}</div>`
+    : `<div style="font-size:2.4rem">🏁 ${R.crowd}${ko ? "명" : "人"}</div><div class="back">${nb ? (ko ? "🎉 최고 기록!" : "🎉 ベスト更新！") : ""} ${ko ? `정답 ${right}/${R.n}` : `正解 ${right}/${R.n}`}</div>`;
+  $("rLearnedT").textContent = ko ? "📒 지나온 단어" : "📒 通ってきた単語";
+  $("rLearned").innerHTML = R.log.map(l => `<div class="phrase">${l.ok ? "⭕" : "❌"} ${l.learn}${say(l.sayT, l.tl)}</div>`).join("");
+  rShowBest(); view("rEnd");
+}
+// 조작: 키보드 ←→ / 화면 누르거나 끌기
+addEventListener("keydown", e => {
+  if (!R.on) return;
+  if (e.key === "ArrowLeft" || e.key === "a") { R.tx = .25; e.preventDefault(); }
+  if (e.key === "ArrowRight" || e.key === "d") { R.tx = .75; e.preventDefault(); }
+});
+const rPoint = e => { if (!R.on) return; const b = $("rCv").getBoundingClientRect(); R.tx = Math.min(1, Math.max(0, (e.clientX - b.left) / b.width)); };
+$("rCv").addEventListener("pointerdown", e => { $("rCv").setPointerCapture(e.pointerId); rPoint(e); });
+$("rCv").addEventListener("pointermove", e => { if (e.buttons) rPoint(e); });
+document.querySelectorAll("[data-run]").forEach(b => b.onclick = () => rStart(b.dataset.run));
+$("rQuit").onclick = () => { R.on = false; rShowBest(); view("gSetup"); };
+$("rAgain").onclick = () => rStart(R.key);
+$("rMenu").onclick = () => view("gSetup");
+rShowBest();
+
 const room = new URLSearchParams(location.search).get("room");
 if (room) { $("oCode").value = room; document.querySelector('[data-tab=game]').click(); }
 document.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => startGame(b.dataset.mode));
