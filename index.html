@@ -4,9 +4,12 @@
 <meta charset="utf-8">
 <script>if(location.hostname==="kem5911.github.io")location.replace("https://hanil-densha.web.app"+location.pathname.replace(/^\/japanese-site/,"")+location.search+location.hash)</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- 처음 그릴 때 한국어·옛 디자인이 잠깐 보이는 잔상 막기: 스크립트가 다 끝날 때까지 숨김 (2초 지나면 무조건 보임) -->
+<style>html{background:#e9eef1}@media (prefers-color-scheme:dark){html{background:#121822}}html.boot body{visibility:hidden}</style>
+<script>document.documentElement.classList.add("boot");setTimeout(function(){document.documentElement.classList.remove("boot")},2000)</script>
 <title>한일전차 · 日韓電車</title>
 <meta name="description" content="한국어·일본어를 서로 배우는 무료 학습 사이트. 원어민 녹음 듣기 모드, 단어장, 플래시카드, 회화, 한일 단어 게임. 韓国語と日本語をお互いに学べる無料サイト。ネイティブ音声のリスニング、単語帳、ゲーム。">
-<meta name="theme-color" content="#14213d">
+<meta name="theme-color" content="#e9eef1">
 <link rel="canonical" href="https://hanil-densha.web.app/">
 <link rel="alternate" hreflang="ko" href="https://hanil-densha.web.app/?lang=ko">
 <link rel="alternate" hreflang="ja" href="https://hanil-densha.web.app/?lang=ja">
@@ -2946,6 +2949,7 @@ const BBS_CFG = { apiKey: "AIzaSyD-vBMjGNhHYSZsZyxRlTlXZaazSoqJzRo", authDomain:
   renderHome();
   const h2 = document.querySelector("#home h2"); if (h2) h2.hidden = true;
 })();
+document.documentElement.classList.remove("boot");
 </script>
 </body>
 </html>
