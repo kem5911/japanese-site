@@ -1062,6 +1062,7 @@ function endGame() {
     const me = ON.side, op = me === "ko" ? "ja" : "ko", s = G.score;
     $("gResult").innerHTML = `<div style="font-size:2rem">${s[me] === s[op] ? "🤝 무승부 · 引き分け" : (s[me] > s[op]) === (me === "ko") ? "🇰🇷 한국인 승리!<br>韓国人の勝ち！" : "🇯🇵 日本人の勝ち！<br>일본인 승리!"}</div>
       <div class="back">🇰🇷 ${s.ko} : ${s.ja} 🇯🇵</div><div class="ex" style="margin-top:12px">${s[me] >= s[op] ? "" : "다음엔 이길 거예요! · 次は勝てる！"}</div>`;
+    if (window.Rec) Rec.game("online", G.score[ON.side], { ko: "온라인 대결", ja: "オンライン対戦" });
     view("gEnd"); return;
   }
   const b = getBest(), s = G.score;
@@ -1070,6 +1071,7 @@ function endGame() {
   $("gResult").innerHTML = G.mode === "duel"
     ? `<div style="font-size:2rem">${s.ko === s.ja ? "🤝 무승부 · 引き分け" : s.ko > s.ja ? "🇰🇷 한국인 승리!<br>韓国人の勝ち！" : "🇯🇵 日本人の勝ち！<br>일본인 승리!"}</div><div class="back">🇰🇷 ${s.ko} : ${s.ja} 🇯🇵</div>`
     : `<div style="font-size:2rem">🏁 ${s[G.mode]}점 · 点</div><div class="back">최고 점수 · ベスト ${b[G.mode]}</div>`;
+  if (window.Rec && (G.mode === "ko" || G.mode === "ja")) Rec.game("battle-" + G.mode, s[G.mode], { ko: `한·일 단어 대결 (${G.mode === "ko" ? "🇰🇷" : "🇯🇵"})`, ja: `日韓単語バトル（${G.mode === "ko" ? "🇰🇷" : "🇯🇵"}）` });
   view("gEnd");
 }
 const nextQ = () => { G.n++; G.n < G.qs.length ? ask() : endGame(); };
@@ -1231,6 +1233,7 @@ function chEnd() {
   $("cLearnedT").textContent = ko ? "📒 오늘 만난 일본어" : "📒 今日出会った韓国語";
   $("cLearned").innerHTML = C.log.map(({ w, ok }) => { const e = EZ[w], t = ko ? e[1] : e[3];
     return `<div class="phrase">${ok ? "⭕" : "❌"} ${e[0]} <b>${t}</b>${say(t, ko ? "ja" : "ko")} <span class="ko">${ko ? e[2] : e[4]}${e[5] ? " · " + e[5] : ""} = ${ko ? e[3] : e[1]}</span></div>`; }).join("");
+  if (window.Rec) Rec.game("bet-" + C.lang, C.right, { ko: "친구랑 내기 (맞힌 수)", ja: "友達と勝負（正解数）" });
   view("cEnd");
 }
 $("cShare").onclick = async () => {
@@ -1364,6 +1367,7 @@ function rEnd() {
     : `<div style="font-size:2.4rem">🏁 ${R.crowd}${ko ? "명" : "人"}</div><div class="back">${nb ? (ko ? "🎉 최고 기록!" : "🎉 ベスト更新！") : ""} ${ko ? `정답 ${right}/${R.n}` : `正解 ${right}/${R.n}`}</div>`;
   $("rLearnedT").textContent = ko ? "📒 지나온 단어" : "📒 通ってきた単語";
   $("rLearned").innerHTML = R.log.map(l => `<div class="phrase">${l.ok ? "⭕" : "❌"} ${l.learn}${say(l.sayT, l.tl)}</div>`).join("");
+  if (window.Rec) Rec.game("run-" + R.key, R.crowd, { ko: `갈림길 러너 (${R.key.endsWith("easy") ? "쉬움" : "보통"})`, ja: `分かれ道ランナー（${R.key.endsWith("easy") ? "かんたん" : "ふつう"}）` });
   rShowBest(); view("rEnd");
 }
 // 조작: 키보드 ←→ / 화면 누르거나 끌기
