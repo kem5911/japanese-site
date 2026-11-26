@@ -564,6 +564,12 @@ const LANG = LANG_SAVED || (/^ja/i.test(navigator.language) ? "ja" : "ko");
 const JA = LANG === "ja";
 const tr = (ko, ja) => JA ? ja : ko;
 document.documentElement.lang = LANG;
+// 検索結果用: 日本語画面では日本語のタイトル・説明に
+if (LANG === "ja") {
+  document.title = "日韓でんしゃ｜韓国語をネイティブ音声で学ぶ無料サイト";
+  const md = document.querySelector('meta[name="description"]');
+  if (md) md.content = "韓国語と日本語をお互いに学べる無料学習サイト。韓国語ネイティブの録音で聞き流し（画面オフでも再生）、単語帳、フラッシュカード、会話、日韓単語ゲーム。";
+}
 function setLang(v) {
   try { localStorage.setItem(LANG_KEY, v); localStorage.setItem("jp-rec-lang", v); } catch {}
   if (v === LANG) return;
