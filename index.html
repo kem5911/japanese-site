@@ -2777,7 +2777,7 @@ const BBS_CFG = { apiKey: "AIzaSyD-vBMjGNhHYSZsZyxRlTlXZaazSoqJzRo", authDomain:
 
   /* 홈: 메뉴 = 작은 승차권 4장 */
   .tiles { display:grid !important; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
-  .tiles .t-list { display:none; }
+  .tiles .t-list, .tiles .t-game, header .rate { display:none !important; }
   .tile { display:flex; gap:10px; align-items:center; text-align:left; background:var(--card); border:0; border-radius:8px; padding:12px; color:var(--text); cursor:pointer; box-shadow:0 1px 0 var(--line); min-height:64px; }
   .tile .i { font-size:1.3rem; }
   .tile b { display:block; font-size:1rem; }
